@@ -14,11 +14,11 @@ COPY packages/ ./packages/
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
-COPY . .
+# Copy frontend source only (not other apps)
+COPY apps/frontend/ ./apps/frontend/
 
-# Build the app
-RUN pnpm run build
+# Build only the frontend
+RUN pnpm --filter @manish-dev/frontend build
 
 # Stage 2: Production
 FROM nginx:alpine AS production

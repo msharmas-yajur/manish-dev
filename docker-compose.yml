@@ -1,29 +1,359 @@
-version: '3.8'
-
 services:
-  app:
+  # ===========================================
+  # Frontend Application
+  # ===========================================
+  frontend:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "8081:80"
     restart: unless-stopped
+    depends_on:
+      - bff
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+    networks:
+      - app-network
 
-  # Development service with hot reload
-  dev:
-    image: node:20-alpine
-    working_dir: /app
-    volumes:
-      - .:/app
-      - /app/node_modules
+  # ===========================================
+  # Phase 1: Core Infrastructure
+  # ===========================================
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: manish-postgres
     ports:
-      - "3000:3000"
-    command: npm start
+      - "5432:5432"
     environment:
-      - CHOKIDAR_USEPOLLING=true
+      POSTGRES_USER: ${POSTGRES_USER:-manish}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-manish_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-manish_dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-manish} -d ${POSTGRES_DB:-manish_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: manish-mongodb
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-manish}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-manish_secret}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-manish_dev}
+    volumes:
+      - mongodb_data:/data/db
+      - ./infrastructure/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: manish-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-manish_secret}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-manish_secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ===========================================
+  # Phase 2: Backend Services (Placeholder)
+  # ===========================================
+
+  # Backend-for-Frontend (BFF) - Node.js
+  bff:
+    build:
+      context: ./apps/bff
+      dockerfile: Dockerfile
+    container_name: manish-bff
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3001
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-manish}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-manish_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-manish_dev}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-manish_secret}
+      BACKEND_URL: http://backend:8000
+      LLM_SERVICE_URL: http://llm-service:8003
+      # Google OAuth
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      SESSION_SECRET: ${SESSION_SECRET:-session-secret-change-in-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Python Backend - FastAPI
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: manish-backend
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: ${NODE_ENV:-development}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-manish}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-manish_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-manish_dev}
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_USER: ${MONGO_USER:-manish}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-manish_secret}
+      MONGO_DB: ${MONGO_DB:-manish_dev}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-manish_secret}
+      LLM_SERVICE_URL: http://llm-service:8003
+      SNOWSTORM_URL: http://snowstorm:8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ===========================================
+  # Phase 3: AI/ML Services (Placeholder)
+  # ===========================================
+
+  # LLM Service - Multi-provider router
+  llm-service:
+    build:
+      context: ./apps/llm-service
+      dockerfile: Dockerfile
+    container_name: manish-llm-service
+    ports:
+      - "8003:8003"
+    environment:
+      ENVIRONMENT: ${NODE_ENV:-development}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-manish}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-manish_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-manish_dev}
+      OLLAMA_HOST: http://ollama:11434
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-manish_secret}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change_this_32_char_encryption_key}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Ollama - Self-hosted LLMs
+  ollama:
+    image: ollama/ollama
+    container_name: manish-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - app-network
+    # GPU support (uncomment if available)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Python Workers - Celery
+  workers:
+    build:
+      context: ./apps/workers
+      dockerfile: Dockerfile
+    container_name: manish-workers
+    environment:
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-manish_secret}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-manish_secret}@redis:6379/0
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-manish}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-manish_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-manish_dev}
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_USER: ${MONGO_USER:-manish}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-manish_secret}
+      MONGO_DB: ${MONGO_DB:-manish_dev}
+      LLM_SERVICE_URL: http://llm-service:8003
+      SNOWSTORM_URL: http://snowstorm:8080
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      llm-service:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # CopilotKit Runtime
+  copilot:
+    build:
+      context: ./apps/copilot
+      dockerfile: Dockerfile
+    container_name: manish-copilot
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      LLM_SERVICE_URL: http://llm-service:8003
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    depends_on:
+      - llm-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ===========================================
+  # Phase 4: Real-time & Healthcare
+  # ===========================================
+
+  # LiveKit Server
+  livekit:
+    image: livekit/livekit-server
+    container_name: manish-livekit
+    ports:
+      - "7880:7880"   # HTTP
+      - "7881:7881"   # WebRTC TCP
+      - "7882:7882/udp" # WebRTC UDP
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./infrastructure/livekit/livekit.yaml:/etc/livekit.yaml:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Snowstorm SNOMED CT Server
+  snowstorm:
+    image: snomedinternational/snowstorm:latest
+    container_name: manish-snowstorm
+    ports:
+      - "8085:8080"
+    environment:
+      JAVA_OPTS: "-Xms2g -Xmx4g"
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Elasticsearch (required by Snowstorm)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: manish-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  app-network:
+    driver: bridge
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data:
+  ollama_data:
+  elasticsearch_data:
