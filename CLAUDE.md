@@ -15,7 +15,10 @@ Healthcare application with multi-container microservices architecture designed 
 ## Architecture
 ```
 Frontend (8081) → Nginx → BFF (3001) → Backend (8000) → Databases
-                              ↘ LLM Service (8003) → Ollama/OpenAI/Anthropic
+                              ↓
+                        Copilot Service (8004) → LLM Service (8003) → Ollama/OpenAI/Anthropic
+                              ↓
+                        Snowstorm (8085) - SNOMED CT
 ```
 
 ## Running Services
@@ -29,21 +32,21 @@ docker compose build --no-cache <svc>   # Rebuild service
 ## Project Structure
 ```
 apps/
-├── frontend/     # React app (Vite + TypeScript) - Healthcare App
-├── website/      # Next.js + GSAP - Company Website
-├── bff/          # Node.js API gateway
-├── backend/      # Python FastAPI backend
-├── llm-service/  # Multi-provider LLM router
-├── workers/      # Celery workers
-└── copilot/      # CopilotKit runtime (Phase 4)
+├── frontend/         # React app (Vite + TypeScript) - Healthcare App
+├── website/          # Next.js + GSAP - Company Website
+├── bff/              # Node.js API gateway
+├── backend/          # Python FastAPI backend
+├── llm-service/      # Multi-provider LLM router
+├── workers/          # Celery workers
+└── copilot-service/  # CopilotKit runtime (Node.js, port 8004) - Planned
 packages/
-├── shared-types/ # Shared TypeScript types
-├── shared-utils/ # Shared utilities
-└── ui-components/ # Shared UI components
+├── shared-types/     # Shared TypeScript types
+├── shared-utils/     # Shared utilities
+└── ui-components/    # Shared UI components
 infrastructure/
-├── postgres/     # PostgreSQL init scripts
-├── mongo/        # MongoDB init scripts
-└── livekit/      # LiveKit config
+├── postgres/         # PostgreSQL init scripts
+├── mongo/            # MongoDB init scripts
+└── livekit/          # LiveKit config
 ```
 
 ## Design Guidelines
@@ -52,12 +55,47 @@ infrastructure/
 - No mobile responsiveness required
 - Healthcare-focused UI/UX
 
+## Development Principles
+
+### Backward Compatibility & Non-Breaking Changes
+**Core Principle**: Every new feature or service must be implemented without breaking existing functionality.
+
+**Implementation Guidelines**:
+1. **Service Isolation**: New services (e.g., CopilotKit) are separate microservices that don't modify existing service code
+2. **Additive Changes Only**: Database migrations add new tables/columns without altering existing schema
+3. **Regression Testing**: Test existing features before and after implementing new ones
+4. **Health Checks**: All services maintain independent health checks - new service failures shouldn't cascade
+5. **Incremental Integration**: New features integrate through existing patterns (BFF proxy, shared types, JWT auth)
+6. **API Versioning**: Consider versioning for breaking API changes (future consideration)
+
+**Testing Approach**:
+- **Before Implementation**: Verify all existing services are healthy and functional
+- **During Implementation**: Run integration tests on existing endpoints after each phase
+- **After Implementation**: Full regression test suite covering auth, RBAC, and all existing APIs
+- **Continuous Monitoring**: Health check endpoints for all services in docker-compose
+
+**Example - CopilotKit Integration**:
+- ✅ New service on separate port (8004) - doesn't touch BFF/Backend code
+- ✅ New database tables only (`copilot_action_audit`, `copilot_conversations`) - doesn't alter existing schema
+- ✅ Reuses existing patterns (JWT auth, RBAC service, PostgreSQL pool) - proven and tested
+- ✅ Optional integration (frontend can work without copilot service running)
+- ✅ BFF proxy is additive (`/api/copilot` route) - doesn't modify existing routes
+- ✅ Independent health checks - copilot service failure doesn't affect auth or patient data APIs
+
+**Red Flags to Avoid**:
+- ❌ Modifying existing database tables (use migrations carefully)
+- ❌ Changing existing API response formats without versioning
+- ❌ Removing or renaming existing environment variables
+- ❌ Altering shared middleware behavior without testing all consumers
+- ❌ Tightly coupling new services to existing ones (use loose coupling via APIs)
+
 ## Ports
 | Service    | Port  |
 |------------|-------|
 | Frontend   | 8081  |
 | BFF        | 3001  |
 | Backend    | 8000  |
+| Copilot Service | 8004 |
 | PostgreSQL | 5432  |
 | MongoDB    | 27018 |
 | Redis      | 6379  |
@@ -148,6 +186,67 @@ infrastructure/
 - **Rationale**: Healthcare professionals use desktop/laptop workstations
 - **Implementation**: min-width: 1024px, no responsive breakpoints
 
+### CopilotKit Integration
+
+#### Decision: Separate Microservice Architecture
+- **Date**: Jan 2026
+- **Context**: Need AI agent capabilities for medical coding, patient data retrieval, and clinical documentation
+- **Choice**: Standalone Node.js service on port 8004 (similar to LLM Service pattern)
+- **Rationale**:
+  - Service isolation (independent scaling and deployment)
+  - Follows existing microservice pattern
+  - Dedicated health checks and monitoring
+  - Clear separation of concerns from BFF
+
+#### Decision: Node.js + Express + TypeScript Framework
+- **Context**: Choose between Node.js and Python for copilot service
+- **Choice**: Node.js + Express + TypeScript
+- **Rationale**:
+  - Native CopilotKit SDK support (`@copilotkit/runtime` is Node.js-first)
+  - Consistency with BFF architecture (reuse auth/RBAC patterns)
+  - TypeScript integration with existing `@manish-dev/shared-types`
+  - Team expertise in Node.js/Express stack
+  - Better for I/O-bound agent tasks
+- **Trade-off**: Python/FastAPI would require custom CopilotKit implementation
+
+#### Decision: User Permission Inheritance Security Model
+- **Context**: How should agents respect user permissions and RBAC?
+- **Choice**: Agents inherit RBAC permissions from authenticated user
+- **Implementation**:
+  - JWT validation on all copilot requests
+  - User context (id, email, roles, permissions) passed to all agent actions
+  - Every action validates required permissions before execution
+  - Patients can only access own data (ownership validation)
+  - Complete audit trail to PostgreSQL (`copilot_action_audit` table)
+- **Rationale**:
+  - Most secure for healthcare data (HIPAA compliance)
+  - Agents can't bypass user permissions
+  - Clear audit trail for compliance
+  - Prevents privilege escalation
+
+#### Decision: Route Through Existing LLM Service
+- **Context**: How should CopilotKit access LLM providers?
+- **Choice**: Route all LLM requests through existing LLM Service (port 8003)
+- **Rationale**:
+  - Centralized LLM provider management
+  - Respects user-specific model configurations
+  - Consistent token tracking and cost monitoring
+  - No duplicate provider credential management
+  - Reuses existing OpenAI/Anthropic/Ollama infrastructure
+- **Alternative Rejected**: Direct OpenAI/Anthropic API calls (would bypass user configs)
+
+### CopilotKit Agent Capabilities
+
+| Agent Action | Purpose | Required Permissions | Data Source |
+|--------------|---------|---------------------|-------------|
+| `searchMedicalCodes` | SNOMED CT code lookup | `llm:use`, `records:read` | Snowstorm (8085) |
+| `getPatientData` | Patient info + medical records | `patients:read`, `records:read` | PostgreSQL |
+| `generateClinicalNote` | Generate SOAP/Progress notes | `llm:use`, `records:create` | LLM Service (8003) |
+
+**Special Rules:**
+- `getPatientData`: Patients can only access own data (user_id validation)
+- `generateClinicalNote`: Restricted to clinical staff only (physician, nurse, medical_assistant)
+
 ---
 
 ## Implementation Progress
@@ -164,8 +263,15 @@ infrastructure/
 - [x] RBAC: Role management API endpoints
 - [x] RBAC: Auth returns roles and permissions on login/register
 
+### In Progress
+- [ ] Phase 4a: CopilotKit Integration (Planned - See CopilotKit Integration section)
+  - Node.js microservice on port 8004
+  - Three agent actions: medical coding, patient data, clinical documentation
+  - RBAC permission inheritance from authenticated users
+  - 6-week phased implementation
+
 ### Pending
-- [ ] Phase 4: CopilotKit, LiveKit telehealth
+- [ ] Phase 4b: LiveKit telehealth integration
 - [ ] Phase 5: Frontend integration with all services
 - [ ] Admin UI for role management
 - [ ] Email service for password reset
@@ -245,6 +351,23 @@ user_pipeline_configs (user_id, pipeline_type_id, model_id, temperature, ...)
 ---
 
 ## Testing
+
+### Health Check Script
+
+Run before implementing new features to verify system health:
+```bash
+./scripts/health-check-all-services.sh
+```
+
+This script checks:
+- All Docker services running
+- Database connectivity (PostgreSQL, MongoDB, Redis)
+- HTTP health endpoints
+- Authentication flow (register, login, JWT)
+- RBAC endpoints
+- Database statistics and baseline performance
+
+See `scripts/README.md` for detailed documentation.
 
 ### Test User
 ```bash
