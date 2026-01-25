@@ -9,6 +9,7 @@ import { logger } from './config/logger';
 import passport, { configurePassport } from './config/passport';
 import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
+import { rolesRouter } from './routes/roles';
 import { proxyRouter } from './routes/proxy';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -59,6 +60,8 @@ app.use(requestLogger);
 // Routes
 app.use('/health', healthRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/roles', rolesRouter);
+app.use('/api', rolesRouter); // Also mount for /api/users/:userId/roles paths
 app.use('/api', proxyRouter);
 
 // Error handling

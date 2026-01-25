@@ -10,6 +10,7 @@ import { createError } from '../middleware/errorHandler';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { logger } from '../config/logger';
 import { GoogleUser } from '../config/passport';
+import { getUserRoleInfo, assignDefaultRole } from '../services/rbac';
 
 export const authRouter = Router();
 
@@ -56,6 +57,9 @@ authRouter.post('/login', async (req: Request, res: Response, next: NextFunction
       return next(createError('Invalid credentials', 401));
     }
 
+    // Get user roles and permissions
+    const roleInfo = await getUserRoleInfo(user.id);
+
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       config.jwtSecret,
@@ -74,6 +78,8 @@ authRouter.post('/login', async (req: Request, res: Response, next: NextFunction
           firstName: user.first_name,
           lastName: user.last_name,
           role: user.role,
+          roles: roleInfo.roles,
+          permissions: roleInfo.permissions,
         },
       },
     });
@@ -113,6 +119,12 @@ authRouter.post('/register', async (req: Request, res: Response, next: NextFunct
 
     const user = result.rows[0];
 
+    // Assign default role to new user
+    await assignDefaultRole(user.id);
+
+    // Get user roles and permissions
+    const roleInfo = await getUserRoleInfo(user.id);
+
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       config.jwtSecret,
@@ -131,6 +143,8 @@ authRouter.post('/register', async (req: Request, res: Response, next: NextFunct
           firstName: user.first_name,
           lastName: user.last_name,
           role: user.role,
+          roles: roleInfo.roles,
+          permissions: roleInfo.permissions,
         },
       },
     });
@@ -157,6 +171,9 @@ authRouter.get('/me', authenticate, async (req, res, next) => {
 
     const user = result.rows[0];
 
+    // Get user roles and permissions
+    const roleInfo = await getUserRoleInfo(user.id);
+
     res.json({
       success: true,
       data: {
@@ -165,6 +182,8 @@ authRouter.get('/me', authenticate, async (req, res, next) => {
         firstName: user.first_name,
         lastName: user.last_name,
         role: user.role,
+        roles: roleInfo.roles,
+        permissions: roleInfo.permissions,
       },
     });
   } catch (err) {

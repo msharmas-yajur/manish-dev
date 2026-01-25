@@ -259,3 +259,226 @@ CREATE TRIGGER update_user_llm_providers_updated_at BEFORE UPDATE ON user_llm_pr
 
 CREATE TRIGGER update_user_pipeline_configs_updated_at BEFORE UPDATE ON user_pipeline_configs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ===========================================
+-- Role-Based Access Control (RBAC)
+-- ===========================================
+
+-- Roles table
+CREATE TABLE IF NOT EXISTS roles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(50) UNIQUE NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    is_system BOOLEAN DEFAULT false,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Permissions table
+CREATE TABLE IF NOT EXISTS permissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) UNIQUE NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    resource VARCHAR(50) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Role-Permission mapping
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id UUID REFERENCES permissions(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (role_id, permission_id)
+);
+
+-- User-Role mapping
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
+    assigned_by UUID REFERENCES users(id),
+    assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, role_id)
+);
+
+-- Create indexes for RBAC tables
+CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_id);
+CREATE INDEX IF NOT EXISTS idx_role_permissions_permission ON role_permissions(permission_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role_id);
+CREATE INDEX IF NOT EXISTS idx_permissions_resource ON permissions(resource);
+CREATE INDEX IF NOT EXISTS idx_permissions_action ON permissions(action);
+
+-- Apply trigger to roles table
+CREATE TRIGGER update_roles_updated_at BEFORE UPDATE ON roles
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ===========================================
+-- Seed Default Roles
+-- ===========================================
+
+INSERT INTO roles (name, display_name, description, is_system) VALUES
+    ('system_admin', 'System Administrator', 'Full system access with all permissions', true),
+    ('physician', 'Physician', 'Licensed medical doctor with full clinical access', true),
+    ('nurse', 'Nurse', 'Registered nurse with patient care access', true),
+    ('medical_assistant', 'Medical Assistant', 'Clinical support staff with limited access', true),
+    ('receptionist', 'Receptionist', 'Front desk staff with scheduling access', true),
+    ('billing_staff', 'Billing Staff', 'Billing department with financial access', true),
+    ('patient', 'Patient', 'Patient portal access to own records', true),
+    ('user', 'User', 'Default role for new users with minimal access', true)
+ON CONFLICT (name) DO NOTHING;
+
+-- ===========================================
+-- Seed Default Permissions
+-- ===========================================
+
+INSERT INTO permissions (name, display_name, description, resource, action) VALUES
+    -- User permissions
+    ('users:create', 'Create Users', 'Create new user accounts', 'users', 'create'),
+    ('users:read', 'View Users', 'View user profiles', 'users', 'read'),
+    ('users:update', 'Update Users', 'Update user profiles', 'users', 'update'),
+    ('users:delete', 'Delete Users', 'Delete user accounts', 'users', 'delete'),
+
+    -- Role permissions
+    ('roles:create', 'Create Roles', 'Create new roles', 'roles', 'create'),
+    ('roles:read', 'View Roles', 'View role definitions', 'roles', 'read'),
+    ('roles:update', 'Update Roles', 'Update role permissions', 'roles', 'update'),
+    ('roles:delete', 'Delete Roles', 'Delete roles', 'roles', 'delete'),
+    ('roles:assign', 'Assign Roles', 'Assign roles to users', 'roles', 'assign'),
+
+    -- Patient permissions
+    ('patients:create', 'Create Patients', 'Create patient records', 'patients', 'create'),
+    ('patients:read', 'View Patients', 'View patient information', 'patients', 'read'),
+    ('patients:update', 'Update Patients', 'Update patient records', 'patients', 'update'),
+    ('patients:delete', 'Delete Patients', 'Delete patient records', 'patients', 'delete'),
+
+    -- Appointment permissions
+    ('appointments:create', 'Create Appointments', 'Schedule appointments', 'appointments', 'create'),
+    ('appointments:read', 'View Appointments', 'View appointment schedules', 'appointments', 'read'),
+    ('appointments:update', 'Update Appointments', 'Modify appointments', 'appointments', 'update'),
+    ('appointments:delete', 'Delete Appointments', 'Cancel appointments', 'appointments', 'delete'),
+
+    -- Medical records permissions
+    ('records:create', 'Create Records', 'Create medical records', 'records', 'create'),
+    ('records:read', 'View Records', 'View medical records', 'records', 'read'),
+    ('records:update', 'Update Records', 'Update medical records', 'records', 'update'),
+    ('records:delete', 'Delete Records', 'Delete medical records', 'records', 'delete'),
+
+    -- Prescription permissions
+    ('prescriptions:create', 'Create Prescriptions', 'Write prescriptions', 'prescriptions', 'create'),
+    ('prescriptions:read', 'View Prescriptions', 'View prescriptions', 'prescriptions', 'read'),
+    ('prescriptions:update', 'Update Prescriptions', 'Modify prescriptions', 'prescriptions', 'update'),
+    ('prescriptions:delete', 'Delete Prescriptions', 'Cancel prescriptions', 'prescriptions', 'delete'),
+
+    -- Billing permissions
+    ('billing:create', 'Create Bills', 'Create billing records', 'billing', 'create'),
+    ('billing:read', 'View Bills', 'View billing information', 'billing', 'read'),
+    ('billing:update', 'Update Bills', 'Update billing records', 'billing', 'update'),
+
+    -- LLM permissions
+    ('llm:use', 'Use LLM', 'Use AI/LLM features', 'llm', 'use'),
+    ('llm:configure', 'Configure LLM', 'Configure LLM providers and models', 'llm', 'configure'),
+
+    -- Admin permissions
+    ('admin:access', 'Admin Access', 'Access admin dashboard', 'admin', 'access'),
+    ('admin:audit', 'View Audit Logs', 'View system audit logs', 'admin', 'audit'),
+
+    -- Own data permissions (for patients)
+    ('own_records:read', 'View Own Records', 'View own medical records', 'own_records', 'read'),
+    ('own_appointments:create', 'Book Own Appointments', 'Schedule own appointments', 'own_appointments', 'create'),
+    ('own_appointments:read', 'View Own Appointments', 'View own appointments', 'own_appointments', 'read'),
+    ('own_appointments:update', 'Update Own Appointments', 'Modify own appointments', 'own_appointments', 'update'),
+    ('own_appointments:delete', 'Cancel Own Appointments', 'Cancel own appointments', 'own_appointments', 'delete'),
+    ('own_profile:read', 'View Own Profile', 'View own user profile', 'own_profile', 'read'),
+    ('own_profile:update', 'Update Own Profile', 'Update own user profile', 'own_profile', 'update')
+ON CONFLICT (name) DO NOTHING;
+
+-- ===========================================
+-- Assign Permissions to Roles
+-- ===========================================
+
+-- System Admin: All permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = 'system_admin'
+ON CONFLICT DO NOTHING;
+
+-- Physician: Clinical permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'physician' AND p.name IN (
+    'patients:create', 'patients:read', 'patients:update',
+    'appointments:create', 'appointments:read', 'appointments:update', 'appointments:delete',
+    'records:create', 'records:read', 'records:update',
+    'prescriptions:create', 'prescriptions:read', 'prescriptions:update', 'prescriptions:delete',
+    'llm:use', 'llm:configure',
+    'own_profile:read', 'own_profile:update'
+)
+ON CONFLICT DO NOTHING;
+
+-- Nurse: Patient care permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'nurse' AND p.name IN (
+    'patients:read', 'patients:update',
+    'appointments:read', 'appointments:update',
+    'records:create', 'records:read', 'records:update',
+    'prescriptions:read',
+    'llm:use',
+    'own_profile:read', 'own_profile:update'
+)
+ON CONFLICT DO NOTHING;
+
+-- Medical Assistant: Limited clinical permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'medical_assistant' AND p.name IN (
+    'patients:read',
+    'appointments:create', 'appointments:read', 'appointments:update',
+    'records:read',
+    'llm:use',
+    'own_profile:read', 'own_profile:update'
+)
+ON CONFLICT DO NOTHING;
+
+-- Receptionist: Scheduling permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'receptionist' AND p.name IN (
+    'patients:read',
+    'appointments:create', 'appointments:read', 'appointments:update', 'appointments:delete',
+    'own_profile:read', 'own_profile:update'
+)
+ON CONFLICT DO NOTHING;
+
+-- Billing Staff: Financial permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'billing_staff' AND p.name IN (
+    'patients:read',
+    'appointments:read',
+    'billing:create', 'billing:read', 'billing:update',
+    'own_profile:read', 'own_profile:update'
+)
+ON CONFLICT DO NOTHING;
+
+-- Patient: Own data permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'patient' AND p.name IN (
+    'own_records:read',
+    'own_appointments:create', 'own_appointments:read', 'own_appointments:update', 'own_appointments:delete',
+    'own_profile:read', 'own_profile:update',
+    'llm:use'
+)
+ON CONFLICT DO NOTHING;
+
+-- User: Minimal permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'user' AND p.name IN (
+    'own_profile:read', 'own_profile:update'
+)
+ON CONFLICT DO NOTHING;
