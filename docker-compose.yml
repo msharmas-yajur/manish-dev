@@ -342,6 +342,109 @@ services:
       - app-network
 
 # ===========================================
+# Phase 5: Company Website (WordPress + Next.js)
+# ===========================================
+
+  # MariaDB for WordPress
+  mariadb:
+    image: mariadb:11
+    container_name: manish-mariadb
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${WP_DB_ROOT_PASSWORD:-wordpress_root_secret}
+      MYSQL_DATABASE: ${WP_DB_NAME:-wordpress}
+      MYSQL_USER: ${WP_DB_USER:-wordpress}
+      MYSQL_PASSWORD: ${WP_DB_PASSWORD:-wordpress_secret}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # WordPress CMS (Headless)
+  wordpress:
+    image: wordpress:6.7-php8.3-apache
+    container_name: manish-wordpress
+    ports:
+      - "8082:80"
+    environment:
+      WORDPRESS_DB_HOST: mariadb:3306
+      WORDPRESS_DB_NAME: ${WP_DB_NAME:-wordpress}
+      WORDPRESS_DB_USER: ${WP_DB_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD:-wordpress_secret}
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_DEBUG: ${WP_DEBUG:-true}
+      # Enable REST API CORS for headless
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'http://localhost:8082');
+        define('WP_SITEURL', 'http://localhost:8082');
+        define('WP_ALLOW_MULTISITE', false);
+        define('DISALLOW_FILE_EDIT', true);
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./infrastructure/wordpress/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/wp-admin/install.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Company Website Frontend (Next.js)
+  website:
+    build:
+      context: ./apps/website
+      dockerfile: Dockerfile
+    container_name: manish-website
+    ports:
+      - "8084:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      WORDPRESS_API_URL: http://wordpress:80/wp-json
+      NEXT_PUBLIC_WORDPRESS_URL: ${NEXT_PUBLIC_WORDPRESS_URL:-http://localhost:8082}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:8084}
+    depends_on:
+      - wordpress
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # phpMyAdmin (optional, for database management)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: manish-phpmyadmin
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: ${WP_DB_ROOT_PASSWORD:-wordpress_root_secret}
+    depends_on:
+      - mariadb
+    restart: unless-stopped
+    networks:
+      - app-network
+    profiles:
+      - debug
+
+# ===========================================
 # Networks
 # ===========================================
 networks:
@@ -357,3 +460,5 @@ volumes:
   redis_data:
   ollama_data:
   elasticsearch_data:
+  mariadb_data:
+  wordpress_data:

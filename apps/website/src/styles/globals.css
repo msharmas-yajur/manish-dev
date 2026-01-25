@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-cream: 250 249 246;
+    --color-warm-white: 254 253 251;
+    --color-terracotta: 212 165 116;
+    --color-deep-brown: 61 49 41;
+    --color-soft-coral: 232 180 160;
+    --color-sage: 168 181 160;
+    --color-sky: 160 196 232;
+    --color-charcoal: 26 26 26;
+    --color-gray-warm: 107 101 96;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream text-charcoal font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif font-medium;
+  }
+
+  /* Selection color */
+  ::selection {
+    @apply bg-terracotta/30 text-deep-brown;
+  }
+}
+
+@layer components {
+  /* Button variants */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3
+           bg-deep-brown text-cream rounded-full font-medium
+           transition-all duration-300 ease-out
+           hover:bg-charcoal hover:scale-105
+           focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3
+           bg-transparent text-deep-brown border-2 border-deep-brown rounded-full font-medium
+           transition-all duration-300 ease-out
+           hover:bg-deep-brown hover:text-cream
+           focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-4 py-2
+           text-deep-brown font-medium
+           transition-all duration-300 ease-out
+           hover:text-terracotta;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-warm-white rounded-3xl p-8
+           shadow-sm hover:shadow-md transition-shadow duration-300;
+  }
+
+  .card-elevated {
+    @apply bg-warm-white rounded-3xl p-8
+           shadow-lg hover:shadow-xl transition-all duration-300
+           hover:-translate-y-1;
+  }
+
+  /* Section spacing */
+  .section {
+    @apply py-20 md:py-32;
+  }
+
+  .section-lg {
+    @apply py-32 md:py-48;
+  }
+
+  /* Container */
+  .container-narrow {
+    @apply max-w-4xl mx-auto px-6;
+  }
+
+  .container-wide {
+    @apply max-w-7xl mx-auto px-6;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-terracotta to-soft-coral bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Text balance for better typography */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Smooth image loading */
+  .img-loading {
+    @apply bg-gray-light animate-pulse;
+  }
+}
