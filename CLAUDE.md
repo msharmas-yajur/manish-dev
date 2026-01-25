@@ -29,7 +29,8 @@ docker compose build --no-cache <svc>   # Rebuild service
 ## Project Structure
 ```
 apps/
-├── frontend/     # React app (Vite + TypeScript)
+├── frontend/     # React app (Vite + TypeScript) - Healthcare App
+├── website/      # Next.js + GSAP - Company Website
 ├── bff/          # Node.js API gateway
 ├── backend/      # Python FastAPI backend
 ├── llm-service/  # Multi-provider LLM router
@@ -64,6 +65,9 @@ infrastructure/
 | Ollama     | 11434 |
 | LiveKit    | 7880  |
 | Snowstorm  | 8085  |
+| WordPress  | 8082  |
+| MariaDB    | 3307  |
+| Website (Next.js) | 8084 |
 
 ---
 
@@ -166,6 +170,7 @@ infrastructure/
 - [ ] Admin UI for role management
 - [ ] Email service for password reset
 - [ ] Apply RBAC middleware to protect existing routes (patients, appointments, etc.)
+- [ ] Company Website (CMS) - See Planning section below
 
 ---
 
@@ -296,3 +301,241 @@ See `.env.example` for full list. Key variables:
 - `JWT_SECRET` - Token signing
 - `ENCRYPTION_KEY` - API key encryption (32 chars)
 - `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` - LLM providers
+
+---
+
+## Company Website Planning
+
+### Overview
+Planning a company marketing website alongside the Caladrius application with:
+- Modern design (Apple + Anthropic/Claude.ai inspired)
+- GSAP animations for smooth interactions
+- Responsive design (unlike the desktop-only app)
+- CMS for content management
+- Make.com integration for automated feature announcements
+
+### Content Requirements
+- **Pages**: Home, About, Products/Features, Pricing, Contact, Careers
+- **Blog Posts**: Company news, industry insights
+- **Feature Announcements**: Automated from GitHub releases
+- **White Papers**: Downloadable PDFs with lead capture
+- **Case Studies**: Customer success stories
+- **Team Members**: Leadership and team profiles
+
+### Design Language
+**Apple-Inspired:**
+- Ultra-clean, minimalist layouts
+- Large hero sections with bold typography
+- Scroll-triggered animations
+- Parallax effects
+
+**Anthropic/Claude.ai-Inspired:**
+- Warm color palette (cream, terracotta, soft gradients)
+- Organic shapes and soft curves
+- Elegant serif + sans-serif typography
+- Trust-focused, conversational tone
+
+### Proposed Color Palette
+```css
+--cream: #FAF9F6;
+--warm-white: #FEFDFB;
+--terracotta: #D4A574;
+--deep-brown: #3D3129;
+--soft-coral: #E8B4A0;
+--sage: #A8B5A0;
+```
+
+### Typography
+- Headings: Fraunces (elegant serif)
+- Body: Inter (clean sans-serif)
+- Code: JetBrains Mono
+
+### CMS Options Under Consideration
+See "CMS Comparison" section for detailed analysis of:
+1. WordPress (Headless) + React/Next.js
+2. Strapi (Node.js headless CMS)
+3. Payload CMS (TypeScript-native)
+4. Sanity (Real-time collaborative)
+5. Directus (SQL-based headless)
+6. Ghost (Publishing-focused)
+7. Keystatic (Git-based, Astro-friendly)
+
+### Make.com Integration
+```
+GitHub Release → Make.com Scenario → CMS API → Website Rebuild
+```
+- Trigger: GitHub release webhook
+- Action: Create feature announcement post
+- Optional: Notify team via Slack/email
+
+### Decisions Made
+1. **CMS Choice**: WordPress (Headless) + React/Next.js frontend
+2. **Database**: MariaDB (standard WordPress setup)
+3. **Custom Fields**: Pods (free, all features included) - replaces ACF Pro
+4. **Hosting**: Same Docker stack as Caladrius application
+5. **Launch Priority**: MVP first (Home, About, Contact, then Features, Blog)
+6. **Domain Structure**: Subdomain separation
+   - `www.caladrius.com` → Company Website (Next.js + WordPress)
+   - `app.caladrius.com` → Healthcare Application (React)
+
+### Development Ports
+| Service | Port | URL |
+|---------|------|-----|
+| Website Frontend (Next.js) | 8084 | localhost:8084 |
+| WordPress Admin | 8082 | localhost:8082/wp-admin |
+| Healthcare App | 8081 | localhost:8081 |
+| BFF API | 3001 | localhost:3001 |
+
+### MVP Pages (Priority Order)
+| Priority | Page | Status |
+|----------|------|--------|
+| P0 | Home | Pending |
+| P0 | About | Pending |
+| P0 | Contact | Pending |
+| P1 | Features | Pending |
+| P1 | Blog | Pending |
+| P2 | Pricing | Pending |
+| P2 | Careers | Pending |
+| P2 | White Papers | Pending |
+
+### WordPress Plugin Stack
+| Plugin | Purpose | License |
+|--------|---------|---------|
+| **Pods** | Custom post types + custom fields + relationships | Free (GPL) |
+| **WP REST API** | Built-in, headless content delivery | Core |
+| **Yoast SEO** | SEO management | Free |
+| **WP GraphQL** | GraphQL API (optional, alternative to REST) | Free |
+| **Application Passwords** | API authentication for Make.com | Core (WP 5.6+) |
+
+### Final Architecture (Chosen)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Company Website Stack                         │
+│                                                                  │
+│  ┌──────────────────────┐      ┌──────────────────────────────┐ │
+│  │   WordPress (CMS)    │      │   Next.js Frontend           │ │
+│  │   ├── Pods Plugin    │─────▶│   ├── GSAP Animations        │ │
+│  │   ├── Yoast SEO      │ REST │   ├── Tailwind CSS           │ │
+│  │   └── App Passwords  │ API  │   └── Apple/Claude Design    │ │
+│  │   Port: 8082         │      │   Port: 8084                 │ │
+│  └──────────────────────┘      └──────────────────────────────┘ │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌──────────────────────┐      ┌──────────────────────────────┐ │
+│  │      MariaDB         │      │       Make.com               │ │
+│  │   Port: 3307         │      │   └── GitHub → WP Posts      │ │
+│  └──────────────────────┘      └──────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Implementation Steps
+1. [ ] Add WordPress + MariaDB to docker-compose.yml
+2. [ ] Create Next.js website app in `apps/website/`
+3. [ ] Configure WordPress with Pods plugin
+4. [ ] Build GSAP animation components
+5. [ ] Create MVP pages (Home, About, Contact)
+6. [ ] Set up Make.com integration for feature announcements
+
+---
+
+## CMS Comparison
+
+### WordPress (Headless)
+| Aspect | Details |
+|--------|---------|
+| **Type** | Traditional CMS, can be headless |
+| **Database** | MySQL/MariaDB |
+| **API** | REST API built-in, GraphQL via plugin |
+| **Pros** | Huge ecosystem, familiar to content teams, ACF for custom fields |
+| **Cons** | PHP stack (different from your Node/Python), security concerns, bloated |
+| **GSAP** | Via custom frontend (React/Next.js) |
+| **Best For** | Teams familiar with WordPress, need plugin ecosystem |
+
+### Strapi
+| Aspect | Details |
+|--------|---------|
+| **Type** | Headless CMS (Node.js) |
+| **Database** | PostgreSQL, MySQL, SQLite, MongoDB |
+| **API** | REST + GraphQL |
+| **Pros** | Self-hosted, customizable, good admin UI, uses your existing PostgreSQL |
+| **Cons** | Can be resource-heavy, v5 breaking changes |
+| **GSAP** | Full control via Next.js frontend |
+| **Best For** | Teams wanting Node.js stack, self-hosted control |
+
+### Payload CMS
+| Aspect | Details |
+|--------|---------|
+| **Type** | Headless CMS (TypeScript-native) |
+| **Database** | MongoDB, PostgreSQL (v3+) |
+| **API** | REST + GraphQL + Local API |
+| **Pros** | TypeScript-first, excellent DX, code-based config, self-hosted |
+| **Cons** | Smaller community, newer |
+| **GSAP** | Full control, can embed in Next.js app |
+| **Best For** | TypeScript teams, developers who want code-first approach |
+
+### Sanity
+| Aspect | Details |
+|--------|---------|
+| **Type** | Headless CMS (Hosted + Self-hosted studio) |
+| **Database** | Sanity Cloud (hosted) |
+| **API** | GROQ (custom query language) + GraphQL |
+| **Pros** | Real-time collaboration, excellent content modeling, portable text |
+| **Cons** | Hosted data (vendor lock-in), costs at scale, learning GROQ |
+| **GSAP** | Full control via frontend |
+| **Best For** | Content teams needing real-time collaboration |
+
+### Directus
+| Aspect | Details |
+|--------|---------|
+| **Type** | Headless CMS (wraps any SQL database) |
+| **Database** | PostgreSQL, MySQL, SQLite, etc. |
+| **API** | REST + GraphQL |
+| **Pros** | Use existing database, beautiful admin, self-hosted |
+| **Cons** | Less opinionated, setup complexity |
+| **GSAP** | Full control via frontend |
+| **Best For** | Teams with existing database, want flexibility |
+
+### Ghost
+| Aspect | Details |
+|--------|---------|
+| **Type** | Publishing platform (can be headless) |
+| **Database** | MySQL/SQLite |
+| **API** | Content API + Admin API |
+| **Pros** | Beautiful editor, built for publishing, newsletters, memberships |
+| **Cons** | Less flexible for non-blog content, limited custom fields |
+| **GSAP** | Via headless frontend |
+| **Best For** | Content-heavy sites, newsletters, memberships |
+
+### Keystatic
+| Aspect | Details |
+|--------|---------|
+| **Type** | Git-based CMS |
+| **Database** | Git (files in repo) |
+| **API** | Direct file access, works with Astro/Next.js |
+| **Pros** | No database needed, version controlled content, free |
+| **Cons** | Not for large teams, no real-time collab, content in code repo |
+| **GSAP** | Full control via Astro/Next.js |
+| **Best For** | Developer-managed content, static sites |
+
+### Recommendation Matrix
+
+| Requirement | Best Options |
+|-------------|--------------|
+| Matches existing stack (Node/TS) | **Payload**, Strapi, Directus |
+| Uses existing PostgreSQL | **Directus**, Strapi, Payload v3 |
+| Best developer experience | **Payload**, Sanity |
+| Best for content teams | Sanity, WordPress, **Ghost** |
+| Self-hosted, no vendor lock-in | **Payload**, Strapi, Directus, Ghost |
+| Simplest setup | **Keystatic**, Ghost |
+| Enterprise features | Sanity, WordPress, Strapi |
+| TypeScript-native | **Payload** |
+
+### Initial Recommendation
+Given your stack (Node.js, TypeScript, PostgreSQL, React), consider:
+
+1. **Payload CMS** - TypeScript-native, code-first, can use your PostgreSQL
+2. **Directus** - Wraps your existing PostgreSQL, beautiful admin
+3. **Strapi** - Popular, Node.js, good ecosystem
+
+All three support GSAP via custom Next.js frontend and integrate well with Make.com via webhooks/REST API.
