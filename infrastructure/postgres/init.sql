@@ -482,3 +482,29 @@ WHERE r.name = 'user' AND p.name IN (
     'own_profile:read', 'own_profile:update'
 )
 ON CONFLICT DO NOTHING;
+
+-- ===========================================
+-- CopilotKit Audit Tables (Phase 2)
+-- ===========================================
+
+-- Track all agent action executions
+CREATE TABLE IF NOT EXISTS copilot_action_audit (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    action_name VARCHAR(100) NOT NULL,
+    parameters JSONB NOT NULL,
+    result JSONB,
+    error TEXT,
+    permissions_checked VARCHAR(255)[],
+    success BOOLEAN DEFAULT true,
+    execution_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for query performance
+CREATE INDEX IF NOT EXISTS idx_copilot_action_audit_user ON copilot_action_audit(user_id);
+CREATE INDEX IF NOT EXISTS idx_copilot_action_audit_action ON copilot_action_audit(action_name);
+CREATE INDEX IF NOT EXISTS idx_copilot_action_audit_created ON copilot_action_audit(created_at);
+
+-- Add comment
+COMMENT ON TABLE copilot_action_audit IS 'Audit trail for all CopilotKit agent actions';

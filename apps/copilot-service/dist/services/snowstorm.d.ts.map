@@ -1,0 +1,1 @@
+{"version":3,"file":"snowstorm.d.ts","sourceRoot":"","sources":["../../src/services/snowstorm.ts"],"names":[],"mappings":"AAGA,OAAO,EAAE,aAAa,EAAE,MAAM,wBAAwB,CAAC;AAEvD,cAAM,eAAe;IACnB,OAAO,CAAC,MAAM,CAAgB;;IAYxB,cAAc,CAAC,IAAI,EAAE,MAAM,EAAE,KAAK,GAAE,MAAW,GAAG,OAAO,CAAC;QAC9D,KAAK,EAAE,aAAa,EAAE,CAAC;QACvB,KAAK,EAAE,MAAM,CAAC;KACf,CAAC;CA4BH;AAED,eAAO,MAAM,eAAe,iBAAwB,CAAC"}
