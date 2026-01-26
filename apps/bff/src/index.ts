@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
@@ -13,15 +12,13 @@ import { rolesRouter } from './routes/roles';
 import { proxyRouter } from './routes/proxy';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
+import { corsMiddleware } from './middleware/cors';
 
 const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:8081'],
-  credentials: true,
-}));
+app.use(corsMiddleware);
 
 // Rate limiting
 const limiter = rateLimit({
