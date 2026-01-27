@@ -149,9 +149,25 @@ Caladrius Health AI Studio is an enterprise healthcare platform designed for cli
 }
 ```
 
-**Planned Agents:**
-- **Patient Data Agent** - Retrieve patient records with RBAC filtering
-- **Clinical Documentation Agent** - Generate SOAP/Progress notes via LLM
+#### 2. Patient Data Agent (`getPatientData`)
+- **Purpose**: Retrieve patient information and medical records
+- **Permissions Required**: `patients:read`, `records:read`
+- **Features**:
+  - Full RBAC enforcement
+  - Ownership validation (patients can only access their own data)
+  - Backend API integration for patient/records retrieval
+  - Complete audit logging
+
+#### 3. Clinical Documentation Agent (`generateClinicalNote`)
+- **Purpose**: Generate clinical notes using LLM
+- **Permissions Required**: `llm:use`, `records:create`
+- **Role Restriction**: Clinical staff only (physician, nurse, medical_assistant)
+- **Note Types**: SOAP, Progress, Discharge, Consultation
+- **Features**:
+  - Medical prompt templates for each note type
+  - Integration with LLM Service (port 8003)
+  - Token usage tracking
+  - Comprehensive error handling
 
 **Security Features:**
 - ✅ Agents inherit user RBAC permissions (no privilege escalation)
@@ -560,30 +576,35 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/roles
   - Audit logging service
   - `searchMedicalCodes` action
   - Database migration (copilot_action_audit table)
+- [x] **Phase 3: Patient Data Agent** (Jan 2026)
+  - `getPatientData` action with RBAC filtering
+  - Ownership validation (patients access own data only)
+  - Backend API client for patient/records retrieval
+  - UUID validation and error handling
+- [x] **Phase 4: Clinical Documentation Agent** (Jan 2026)
+  - `generateClinicalNote` action (SOAP, Progress, Discharge, Consultation)
+  - Role restriction to clinical staff (physician, nurse, medical_assistant)
+  - Medical prompt templates for each note type
+  - LLM Service client with OpenAI-compatible API
+  - `summarizePatientHistory` and `saveDocument` actions
+- [x] **Phase 5: Frontend Integration** (Jan 2026)
+  - CopilotProvider with authentication integration
+  - CopilotSidebar with Material Design 3 styling
+  - CopilotChat component with message threading
+  - AuthContext for user session management
+  - BFF proxy route for copilot service
+- [x] **Phase 6: Testing & Documentation** (Jan 2026)
+  - Unit tests for all agents (medicalCoding, patientData, clinicalDocumentation)
+  - Service tests for RBAC and audit logging
+  - Integration test structure
+  - Mocked external services (Snowstorm, Backend, LLM)
 
 ### In Progress 🚧
 
-**CopilotKit Integration:**
-- [ ] **Phase 3: Patient Data Agent**
-  - Patient data retrieval with RBAC filtering
-  - Ownership validation (patients access own data only)
-  - Medical records integration
-- [ ] **Phase 4: Clinical Documentation Agent**
-  - Generate SOAP notes via LLM
-  - Note templates (Progress, Discharge, Consultation)
-  - Integration with LLM Service
-- [ ] **Phase 5: Frontend Integration**
-  - CopilotKit React components
-  - Material-UI styled sidebar
-  - BFF proxy configuration
-- [ ] **Phase 6: Testing & Documentation**
-  - E2E tests with Playwright
-  - API documentation (OpenAPI/Swagger)
-  - Security audit
-
 **Other:**
-- [ ] Frontend integration with all backend services
 - [ ] Admin UI for role management
+- [ ] E2E tests with Playwright
+- [ ] OpenAPI/Swagger documentation
 
 ### Planned 📋
 
