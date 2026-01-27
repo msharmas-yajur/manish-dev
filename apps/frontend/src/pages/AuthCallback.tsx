@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, CircularProgress, Typography, Alert } from '@mui/material';
 
+const TOKEN_STORAGE_KEY = 'caladrius_auth_token';
+const USER_STORAGE_KEY = 'caladrius_auth_user';
+
 export function AuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -18,8 +21,8 @@ export function AuthCallback() {
     }
 
     if (token) {
-      // Store the token
-      localStorage.setItem('token', token);
+      // Store the token with correct key
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
 
       // Fetch user info
       fetch('/api/auth/me', {
@@ -30,16 +33,21 @@ export function AuthCallback() {
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.data) {
-            localStorage.setItem('user', JSON.stringify(data.data));
-            // Redirect to dashboard
-            navigate('/');
+            // Store user with correct key
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.data));
+            // Force page reload to reinitialize AuthContext with new token
+            window.location.href = '/patients';
           } else {
             setError('Failed to fetch user information.');
+            // Clear invalid token
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
             setTimeout(() => navigate('/login'), 3000);
           }
         })
         .catch(() => {
           setError('Failed to complete authentication.');
+          // Clear invalid token
+          localStorage.removeItem(TOKEN_STORAGE_KEY);
           setTimeout(() => navigate('/login'), 3000);
         });
     } else {
