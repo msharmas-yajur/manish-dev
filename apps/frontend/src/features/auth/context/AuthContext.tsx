@@ -44,7 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem(TOKEN_STORAGE_KEY);
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  // Set initial loading to true if we have a token to verify
+  const [isLoading, setIsLoading] = useState(() => {
+    return !!localStorage.getItem(TOKEN_STORAGE_KEY);
+  });
   const [error, setError] = useState<string | null>(null);
 
   // Check if user is authenticated
@@ -88,6 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
           setIsLoading(false);
         }
+      } else {
+        // No token to verify, ensure loading is false
+        setIsLoading(false);
       }
     };
 

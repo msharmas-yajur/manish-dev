@@ -34,10 +34,10 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [googleEnabled, setGoogleEnabled] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect to patients page if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/patients', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
