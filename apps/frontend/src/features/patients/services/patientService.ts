@@ -5,6 +5,7 @@ import type {
   CreatePatientRequest,
   UpdatePatientRequest,
 } from '../types/patient.types';
+import { apiFetch } from '../../../utils/api';
 
 const API_BASE = '/api/backend/patients';
 
@@ -240,7 +241,7 @@ export const patientService = {
         gender: filters.gender || 'all',
       });
 
-      const response = await fetch(`${API_BASE}?${queryParams.toString()}`);
+      const response = await apiFetch(`${API_BASE}?${queryParams.toString()}`);
 
       if (!response.ok) {
         return getMockPatientsResponse(page, pageSize, filters);
@@ -262,7 +263,7 @@ export const patientService = {
    */
   async getPatientById(id: string): Promise<Patient | null> {
     try {
-      const response = await fetch(`${API_BASE}/${id}`);
+      const response = await apiFetch(`${API_BASE}/${id}`);
 
       if (!response.ok) {
         // Fallback to mock data
@@ -289,7 +290,7 @@ export const patientService = {
    */
   async createPatient(data: CreatePatientRequest): Promise<Patient> {
     try {
-      const response = await fetch(API_BASE, {
+      const response = await apiFetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -363,7 +364,7 @@ export const patientService = {
    */
   async updatePatient(id: string, data: UpdatePatientRequest): Promise<Patient | null> {
     try {
-      const response = await fetch(`${API_BASE}/${id}`, {
+      const response = await apiFetch(`${API_BASE}/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -443,7 +444,7 @@ export const patientService = {
    */
   async deletePatient(id: string): Promise<boolean> {
     try {
-      const response = await fetch(`${API_BASE}/${id}`, {
+      const response = await apiFetch(`${API_BASE}/${id}`, {
         method: 'DELETE',
       });
 

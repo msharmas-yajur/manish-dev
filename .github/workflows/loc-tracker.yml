@@ -1,0 +1,29 @@
+name: Daily LOC Tracker
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight (UTC)
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+
+jobs:
+  track-loc:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Make script executable
+        run: chmod +x scripts/count-loc.sh
+
+      - name: Run LOC counter
+        run: ./scripts/count-loc.sh
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add METRICS.md
+          git commit -m "docs: update daily LOC metrics [skip ci]" || echo "No changes to commit"
+          git push

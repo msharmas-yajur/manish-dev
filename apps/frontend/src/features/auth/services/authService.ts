@@ -1,4 +1,5 @@
 import type { User, AuthResponse } from '@manish-dev/shared-types';
+import { apiFetch } from '../../../utils/api';
 
 const API_BASE = '/api/auth';
 
@@ -61,20 +62,14 @@ export const authService = {
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      const token = localStorage.getItem('caladrius_auth_token');
-      if (!token) return null;
-
-      const response = await fetch(`${API_BASE}/me`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const response = await apiFetch(`${API_BASE}/me`);
       if (!response.ok) return null;
       const contentType = response.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         return null;
       }
-      const result = await response.json();
-      if (!result.success) return null;
-      return result.data;
+      const data = await response.json();
+      return data.data || data;
     } catch {
       return null;
     }
