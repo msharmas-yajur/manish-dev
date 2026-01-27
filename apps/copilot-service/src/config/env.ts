@@ -25,6 +25,7 @@ export const config = {
   // Services
   llmServiceUrl: process.env.LLM_SERVICE_URL || 'http://localhost:8003',
   snowstormUrl: process.env.SNOWSTORM_URL || 'http://localhost:8080',
+  backendApiUrl: process.env.BACKEND_API_URL || 'http://localhost:8000',
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-in-production',

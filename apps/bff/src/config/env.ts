@@ -25,6 +25,7 @@ export const config = {
   // Backend services
   backendUrl: process.env.BACKEND_URL || 'http://localhost:8000',
   llmServiceUrl: process.env.LLM_SERVICE_URL || 'http://localhost:8003',
+  copilotServiceUrl: process.env.COPILOT_SERVICE_URL || 'http://localhost:8004',
 
   // JWT
   jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-in-production',

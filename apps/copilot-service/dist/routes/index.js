@@ -5,8 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const health_1 = __importDefault(require("./health"));
+const copilot_1 = __importDefault(require("./copilot"));
 const router = (0, express_1.Router)();
 router.use('/', health_1.default);
-// TODO: Add copilot routes in Phase 2
+router.use('/copilot', copilot_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

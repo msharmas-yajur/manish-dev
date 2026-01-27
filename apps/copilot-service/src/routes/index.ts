@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import healthRouter from './health';
+import copilotRouter from './copilot';
 
 const router = Router();
 
 router.use('/', healthRouter);
-// TODO: Add copilot routes in Phase 2
+router.use('/copilot', copilotRouter);
 
 export default router;

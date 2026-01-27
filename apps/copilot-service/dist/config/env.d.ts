@@ -15,6 +15,7 @@ export declare const config: {
     };
     llmServiceUrl: string;
     snowstormUrl: string;
+    backendApiUrl: string;
     jwtSecret: string;
     corsOrigins: string[];
 };
