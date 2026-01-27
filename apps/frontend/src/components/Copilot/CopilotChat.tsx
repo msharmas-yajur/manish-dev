@@ -28,12 +28,6 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useCopilotChat, useCopilotAction } from '@copilotkit/react-core';
-import type {
-  CopilotMessage,
-  SearchMedicalCodesResponse,
-  GetPatientDataResponse,
-  GenerateClinicalNoteResponse,
-} from './types';
 
 /**
  * Styled components for the chat interface
@@ -259,10 +253,10 @@ export function CopilotChat() {
   // Sync CopilotKit messages with local state
   useEffect(() => {
     if (visibleMessages && visibleMessages.length > 0) {
-      const newMessages: ChatMessage[] = visibleMessages.map((msg, index) => ({
+      const newMessages: ChatMessage[] = visibleMessages.map((msg: any, index) => ({
         id: `copilot-${index}`,
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
+        role: (msg.role || 'assistant') as 'user' | 'assistant',
+        content: msg.content || msg.text || '',
         timestamp: new Date(),
       }));
       setMessages(newMessages);
@@ -286,9 +280,8 @@ export function CopilotChat() {
 
     try {
       await appendMessage({
-        role: 'user',
         content: inputValue.trim(),
-      });
+      } as any);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');
       setMessages((prev) => [

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Drawer,
   Box,
@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import {
   SmartToy as AIIcon,
-  Close as CloseIcon,
   ChevronLeft as ChevronLeftIcon,
   Psychology as PsychologyIcon,
   HealthAndSafety as HealthIcon,
