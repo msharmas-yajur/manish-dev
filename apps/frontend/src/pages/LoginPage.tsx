@@ -26,11 +26,10 @@ import { useAuthContext } from '@features/auth';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuthContext();
+  const { login: authLogin, isLoading: authLoading, error: authError, isAuthenticated } = useAuthContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [googleEnabled, setGoogleEnabled] = useState(false);
@@ -75,15 +74,12 @@ export function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
 
     try {
-      await login(email, password);
+      await authLogin(email, password);
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -193,9 +189,9 @@ export function LoginPage() {
               Sign in to access your dashboard
             </Typography>
 
-            {error && (
+            {(error || authError) && (
               <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
+                {error || authError}
               </Alert>
             )}
 
@@ -265,14 +261,14 @@ export function LoginPage() {
                 fullWidth
                 variant="contained"
                 size="large"
-                disabled={isLoading || isGoogleLoading}
+                disabled={authLoading || isGoogleLoading}
                 sx={{
                   py: 1.5,
                   mb: 3,
                   fontSize: '1rem',
                 }}
               >
-                {isLoading ? (
+                {authLoading ? (
                   <CircularProgress size={24} color="inherit" />
                 ) : (
                   'Sign In'
@@ -291,7 +287,7 @@ export function LoginPage() {
                     fullWidth
                     variant="outlined"
                     size="large"
-                    disabled={isLoading || isGoogleLoading}
+                    disabled={authLoading || isGoogleLoading}
                     onClick={handleGoogleLogin}
                     startIcon={isGoogleLoading ? <CircularProgress size={20} /> : <Google />}
                     sx={{
