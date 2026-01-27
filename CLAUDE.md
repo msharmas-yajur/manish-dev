@@ -240,8 +240,10 @@ infrastructure/
 | Agent Action | Purpose | Required Permissions | Data Source | Status |
 |--------------|---------|---------------------|-------------|--------|
 | `searchMedicalCodes` | SNOMED CT code lookup | `llm:use`, `records:read` | Snowstorm (8085) | ✅ Complete (Phase 2) |
-| `getPatientData` | Patient info + medical records | `patients:read`, `records:read` | PostgreSQL | 🚧 Phase 3 |
-| `generateClinicalNote` | Generate SOAP/Progress notes | `llm:use`, `records:create` | LLM Service (8003) | 📋 Phase 4 |
+| `getPatientData` | Patient info + medical records | `patients:read`, `records:read` | Backend API (8000) | ✅ Complete (Phase 3) |
+| `generateClinicalNote` | Generate SOAP/Progress/Discharge/Consultation notes | `llm:use`, `records:create` | LLM Service (8003) | ✅ Complete (Phase 4) |
+| `summarizePatientHistory` | Summarize patient medical history | `records:read`, `llm:use` | Backend + LLM | ✅ Complete (Phase 4) |
+| `saveDocument` | Save clinical documents to database | `records:create`, `records:update` | PostgreSQL | ✅ Complete (Phase 4) |
 
 **Special Rules:**
 - `getPatientData`: Patients can only access own data (user_id validation)
@@ -308,10 +310,9 @@ CREATE TABLE copilot_action_audit (
 - [x] RBAC: Auth returns roles and permissions on login/register
 
 ### In Progress
-- [ ] Phase 4c: CopilotKit - Patient Data Agent (Phase 3)
-- [ ] Phase 4d: CopilotKit - Clinical Documentation Agent (Phase 4)
-- [ ] Phase 4e: CopilotKit - Frontend Integration (Phase 5)
-- [ ] Phase 4f: CopilotKit - Testing & Documentation (Phase 6)
+- [ ] Admin UI for role management
+- [ ] E2E tests with Playwright
+- [ ] OpenAPI/Swagger documentation
 
 ### Completed Recently
 - [x] **Phase 4a: CopilotKit Service Foundation (Phase 1)** - Jan 26, 2026
@@ -332,10 +333,36 @@ CREATE TABLE copilot_action_audit (
   - TypeScript types for medical coding
   - Completed in 5 minutes via 6 parallel agents
 
+- [x] **Phase 4c: CopilotKit Patient Data Agent (Phase 3)** - Jan 27, 2026
+  - `getPatientData` action with full RBAC enforcement
+  - Ownership validation (patients can only access own data)
+  - Backend API client for patient/records retrieval
+  - UUID validation and comprehensive error handling
+  - Complete audit logging with non-blocking writes
+
+- [x] **Phase 4d: CopilotKit Clinical Documentation Agent (Phase 4)** - Jan 27, 2026
+  - `generateClinicalNote` action for SOAP/Progress/Discharge/Consultation notes
+  - Role restriction to clinical staff only (physician, nurse, medical_assistant)
+  - Medical prompt templates for each note type
+  - LLM Service client with OpenAI-compatible API
+  - `summarizePatientHistory` and `saveDocument` actions
+  - Comprehensive error handling and audit logging
+
+- [x] **Phase 4e: CopilotKit Frontend Integration (Phase 5)** - Jan 27, 2026
+  - CopilotProvider with authentication integration
+  - CopilotSidebar with Material Design 3 styling
+  - CopilotChat component with message threading
+  - AuthContext for user session management
+  - BFF proxy route for copilot service (`/api/copilot`)
+
+- [x] **Phase 4f: CopilotKit Testing & Documentation (Phase 6)** - Jan 27, 2026
+  - Unit tests for all agents (medicalCoding, patientData, clinicalDocumentation)
+  - Service tests for RBAC and audit logging
+  - Integration test structure
+  - Mocked external services (Snowstorm, Backend, LLM)
+
 ### Pending
-- [ ] Phase 4b: LiveKit telehealth integration
-- [ ] Phase 5: Frontend integration with all services
-- [ ] Admin UI for role management
+- [ ] LiveKit telehealth integration
 - [ ] Email service for password reset
 - [ ] Apply RBAC middleware to protect existing routes (patients, appointments, etc.)
 - [ ] Company Website (CMS) - See Planning section below
