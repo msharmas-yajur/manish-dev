@@ -127,7 +127,8 @@ function formatRelativeTime(dateString: string): string {
  */
 export function SecuritySettings() {
   const { user } = useAuthContext();
-  const isOAuthUser = (user as Record<string, unknown>)?.auth_provider === 'google';
+  const userAny = user as unknown as { auth_provider?: string } | null;
+  const isOAuthUser = userAny?.auth_provider === 'google';
 
   // Password form state
   const [passwordForm, setPasswordForm] = useState<PasswordChangeRequest>({

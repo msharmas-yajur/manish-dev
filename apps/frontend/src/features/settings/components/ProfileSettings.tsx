@@ -29,10 +29,11 @@ import { TIMEZONE_OPTIONS } from '../types';
 export function ProfileSettings() {
   const { user } = useAuthContext();
 
-  // Form state
+  // Form state - use any for dynamic user properties from backend
+  const userAny = user as unknown as { first_name?: string; last_name?: string; auth_provider?: string } | null;
   const [formData, setFormData] = useState<UpdateProfileRequest>({
-    firstName: (user as Record<string, unknown>)?.first_name as string || '',
-    lastName: (user as Record<string, unknown>)?.last_name as string || '',
+    firstName: userAny?.first_name || '',
+    lastName: userAny?.last_name || '',
     organization: '',
     department: '',
     timezone: 'America/New_York',
@@ -49,7 +50,7 @@ export function ProfileSettings() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Check if email is from OAuth (read-only)
-  const isOAuthUser = (user as Record<string, unknown>)?.auth_provider === 'google';
+  const isOAuthUser = userAny?.auth_provider === 'google';
 
   // Handle input changes
   const handleInputChange = useCallback(
@@ -134,8 +135,8 @@ export function ProfileSettings() {
 
   // Get user initials for avatar fallback
   const getInitials = () => {
-    const first = formData.firstName?.[0] || ((user as Record<string, unknown>)?.first_name as string)?.[0] || '';
-    const last = formData.lastName?.[0] || ((user as Record<string, unknown>)?.last_name as string)?.[0] || '';
+    const first = formData.firstName?.[0] || userAny?.first_name?.[0] || '';
+    const last = formData.lastName?.[0] || userAny?.last_name?.[0] || '';
     return `${first}${last}`.toUpperCase() || 'U';
   };
 
