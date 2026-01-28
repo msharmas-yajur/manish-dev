@@ -46,7 +46,7 @@ export function IframeTool({
   url,
   title,
   toolId,
-  onClose,
+  onClose: _onClose,
   sandbox = DEFAULT_SANDBOX,
 }: IframeToolProps) {
   const [isLoading, setIsLoading] = useState(true);

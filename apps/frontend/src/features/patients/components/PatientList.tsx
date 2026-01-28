@@ -11,7 +11,6 @@ import { usePatients } from '../hooks/usePatients';
 import { PatientSearchBar } from './PatientSearchBar';
 import { PatientTable } from './PatientTable';
 import { CreatePatientDialog } from './CreatePatientDialog';
-import type { PatientFilters as PatientFiltersType } from '../types/patient.types';
 
 interface PatientListProps {
   onViewPatient?: (patientId: string) => void;

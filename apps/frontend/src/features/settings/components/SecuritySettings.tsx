@@ -24,7 +24,6 @@ import {
   DialogContentText,
   DialogActions,
   Tooltip,
-  Divider,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -41,7 +40,6 @@ import type {
   PasswordChangeRequest,
   ActiveSession,
   ApiKey,
-  CreateApiKeyRequest,
 } from '../types';
 
 // Mock data for sessions
@@ -129,7 +127,7 @@ function formatRelativeTime(dateString: string): string {
  */
 export function SecuritySettings() {
   const { user } = useAuthContext();
-  const isOAuthUser = user?.auth_provider === 'google';
+  const isOAuthUser = (user as Record<string, unknown>)?.auth_provider === 'google';
 
   // Password form state
   const [passwordForm, setPasswordForm] = useState<PasswordChangeRequest>({

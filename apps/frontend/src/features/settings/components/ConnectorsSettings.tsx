@@ -24,7 +24,6 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -386,9 +385,6 @@ export function ConnectorsSettings() {
       {connectors.length > 0 ? (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           {connectors.map((connector) => {
-            const providerInfo = EHR_PROVIDERS.find(
-              (p) => p.id === connector.provider
-            );
             return (
               <Grid item xs={12} md={6} key={connector.id}>
                 <Card

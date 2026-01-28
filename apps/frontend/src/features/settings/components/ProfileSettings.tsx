@@ -31,8 +31,8 @@ export function ProfileSettings() {
 
   // Form state
   const [formData, setFormData] = useState<UpdateProfileRequest>({
-    firstName: user?.first_name || '',
-    lastName: user?.last_name || '',
+    firstName: (user as Record<string, unknown>)?.first_name as string || '',
+    lastName: (user as Record<string, unknown>)?.last_name as string || '',
     organization: '',
     department: '',
     timezone: 'America/New_York',
@@ -40,7 +40,7 @@ export function ProfileSettings() {
 
   // Avatar state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [_avatarFile, setAvatarFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // UI state
@@ -49,7 +49,7 @@ export function ProfileSettings() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Check if email is from OAuth (read-only)
-  const isOAuthUser = user?.auth_provider === 'google';
+  const isOAuthUser = (user as Record<string, unknown>)?.auth_provider === 'google';
 
   // Handle input changes
   const handleInputChange = useCallback(
@@ -134,8 +134,8 @@ export function ProfileSettings() {
 
   // Get user initials for avatar fallback
   const getInitials = () => {
-    const first = formData.firstName?.[0] || user?.first_name?.[0] || '';
-    const last = formData.lastName?.[0] || user?.last_name?.[0] || '';
+    const first = formData.firstName?.[0] || ((user as Record<string, unknown>)?.first_name as string)?.[0] || '';
+    const last = formData.lastName?.[0] || ((user as Record<string, unknown>)?.last_name as string)?.[0] || '';
     return `${first}${last}`.toUpperCase() || 'U';
   };
 

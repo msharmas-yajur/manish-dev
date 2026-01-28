@@ -60,7 +60,7 @@ interface QuickAction {
  * - Scrollable chat messages area
  * - Fixed input area at bottom
  */
-export function CopilotTool({ onClose }: CopilotToolProps) {
+export function CopilotTool({ onClose: _onClose }: CopilotToolProps) {
   // Placeholder state - actual CopilotKit integration will come later
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
