@@ -1,6 +1,6 @@
 // Patient feature type definitions
 
-export type PatientStatus = 'LINKED' | 'ACTIVE' | 'INACTIVE';
+export type PatientStatus = 'LINKED' | 'NOT_LINKED' | 'ACTIVE' | 'INACTIVE';
 
 export type PatientGender = 'Male' | 'Female' | 'Other';
 
@@ -10,6 +10,7 @@ export interface Patient {
   lastName: string;
   fullName: string;
   abhaNumber: string;
+  abhaAddress?: string;
   email?: string;
   phone?: string;
   dateOfBirth: string;

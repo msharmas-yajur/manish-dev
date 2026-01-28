@@ -9,76 +9,157 @@ import type {
 const API_BASE = '/api/backend/patients';
 
 // Mock data for development when backend is not available
+// Patient names and data matching the design screenshots
 const mockPatients: Patient[] = [
   {
-    id: 'p-001',
-    firstName: 'Rajesh',
-    lastName: 'Kumar',
-    fullName: 'Rajesh Kumar',
+    id: '2025971',
+    firstName: 'Chitra',
+    lastName: 'K',
+    fullName: 'Chitra K',
+    abhaNumber: '',
+    abhaAddress: '',
+    phone: '6875421366',
+    dateOfBirth: '2003-03-06',
+    gender: 'Female',
+    status: 'NOT_LINKED',
+    lastVisit: '2026-01-22',
+    createdAt: '2025-06-10T10:30:00Z',
+    updatedAt: '2026-01-22T14:45:00Z',
+  },
+  {
+    id: '2025069',
+    firstName: 'Clark',
+    lastName: 'Kent',
+    fullName: 'Clark Kent',
+    abhaNumber: '',
+    abhaAddress: '',
+    phone: '8745236558',
+    dateOfBirth: '1975-07-09',
+    gender: 'Male',
+    status: 'NOT_LINKED',
+    lastVisit: '2026-01-21',
+    createdAt: '2025-08-05T09:15:00Z',
+    updatedAt: '2026-01-21T11:20:00Z',
+  },
+  {
+    id: '2025331',
+    firstName: 'Sheela',
+    lastName: 'Vijay',
+    fullName: 'Sheela Vijay',
+    abhaNumber: '',
+    abhaAddress: '',
+    phone: '8532145785',
+    dateOfBirth: '1973-03-01',
+    gender: 'Female',
+    status: 'NOT_LINKED',
+    lastVisit: '2026-01-13',
+    createdAt: '2025-04-20T14:00:00Z',
+    updatedAt: '2026-01-13T16:30:00Z',
+  },
+  {
+    id: '2025599',
+    firstName: 'Leela',
+    lastName: 'Indhiran',
+    fullName: 'Leela Indhiran',
+    abhaNumber: '',
+    abhaAddress: '',
+    phone: '9872135425',
+    dateOfBirth: '1988-03-03',
+    gender: 'Female',
+    status: 'NOT_LINKED',
+    lastVisit: '2026-01-13',
+    createdAt: '2025-09-12T08:45:00Z',
+    updatedAt: '2026-01-13T10:15:00Z',
+  },
+  {
+    id: '2025801',
+    firstName: 'Radhe',
+    lastName: 'Rathod',
+    fullName: 'Radhe Rathod',
+    abhaNumber: '',
+    abhaAddress: '',
+    phone: '6854585565',
+    dateOfBirth: '1990-06-07',
+    gender: 'Male',
+    status: 'NOT_LINKED',
+    lastVisit: '2026-01-12',
+    createdAt: '2025-11-28T12:00:00Z',
+    updatedAt: '2026-01-12T09:30:00Z',
+  },
+  {
+    id: '2025969',
+    firstName: 'Nancy',
+    lastName: 'Wheeler',
+    fullName: 'Nancy Wheeler',
+    abhaNumber: '',
+    abhaAddress: '',
+    phone: '8745236585',
+    dateOfBirth: '1965-06-08',
+    gender: 'Female',
+    status: 'NOT_LINKED',
+    lastVisit: '2026-01-08',
+    createdAt: '2025-03-15T10:00:00Z',
+    updatedAt: '2026-01-08T14:30:00Z',
+  },
+  {
+    id: '2025062',
+    firstName: 'Ethan',
+    lastName: 'Hunt',
+    fullName: 'Ethan Hunt',
+    abhaNumber: '',
+    abhaAddress: '',
+    phone: '8548545854',
+    dateOfBirth: '1985-02-07',
+    gender: 'Male',
+    status: 'NOT_LINKED',
+    lastVisit: '2026-01-08',
+    createdAt: '2025-07-20T11:00:00Z',
+    updatedAt: '2026-01-08T16:00:00Z',
+  },
+  {
+    id: '2025370',
+    firstName: 'Jane',
+    lastName: 'Doe',
+    fullName: 'Jane Doe',
+    abhaNumber: '',
+    abhaAddress: '',
+    phone: '9875487548',
+    dateOfBirth: '1999-02-09',
+    gender: 'Female',
+    status: 'NOT_LINKED',
+    lastVisit: '2025-12-31',
+    createdAt: '2025-01-10T09:00:00Z',
+    updatedAt: '2025-12-31T12:00:00Z',
+  },
+  {
+    id: '2025123',
+    firstName: 'John',
+    lastName: 'Smith',
+    fullName: 'John Smith',
     abhaNumber: '91-1234-5678-9012',
-    phone: '+91 98765 43210',
-    dateOfBirth: '1985-03-15',
+    abhaAddress: 'john.smith@abha',
+    phone: '9876543210',
+    dateOfBirth: '1982-05-15',
     gender: 'Male',
     status: 'LINKED',
     lastVisit: '2026-01-20',
-    createdAt: '2025-06-10T10:30:00Z',
-    updatedAt: '2026-01-20T14:45:00Z',
+    createdAt: '2024-12-01T08:00:00Z',
+    updatedAt: '2026-01-20T10:30:00Z',
   },
   {
-    id: 'p-002',
+    id: '2025456',
     firstName: 'Priya',
     lastName: 'Sharma',
     fullName: 'Priya Sharma',
     abhaNumber: '91-2345-6789-0123',
-    phone: '+91 87654 32109',
-    dateOfBirth: '1992-07-22',
+    abhaAddress: 'priya.sharma@abha',
+    phone: '8765432109',
+    dateOfBirth: '1990-11-22',
     gender: 'Female',
     status: 'LINKED',
     lastVisit: '2026-01-18',
-    createdAt: '2025-08-05T09:15:00Z',
-    updatedAt: '2026-01-18T11:20:00Z',
-  },
-  {
-    id: 'p-003',
-    firstName: 'Amit',
-    lastName: 'Patel',
-    fullName: 'Amit Patel',
-    abhaNumber: '91-3456-7890-1234',
-    phone: '+91 76543 21098',
-    dateOfBirth: '1978-11-08',
-    gender: 'Male',
-    status: 'LINKED',
-    lastVisit: '2026-01-15',
-    createdAt: '2025-04-20T14:00:00Z',
-    updatedAt: '2026-01-15T16:30:00Z',
-  },
-  {
-    id: 'p-004',
-    firstName: 'Sunita',
-    lastName: 'Reddy',
-    fullName: 'Sunita Reddy',
-    abhaNumber: '91-4567-8901-2345',
-    phone: '+91 65432 10987',
-    dateOfBirth: '1988-05-30',
-    gender: 'Female',
-    status: 'LINKED',
-    lastVisit: '2026-01-22',
-    createdAt: '2025-09-12T08:45:00Z',
-    updatedAt: '2026-01-22T10:15:00Z',
-  },
-  {
-    id: 'p-005',
-    firstName: 'Vikram',
-    lastName: 'Singh',
-    fullName: 'Vikram Singh',
-    abhaNumber: '91-5678-9012-3456',
-    phone: '+91 54321 09876',
-    dateOfBirth: '1995-01-12',
-    gender: 'Male',
-    status: 'LINKED',
-    lastVisit: '2026-01-10',
-    createdAt: '2025-11-28T12:00:00Z',
-    updatedAt: '2026-01-10T09:30:00Z',
+    createdAt: '2025-02-14T13:00:00Z',
+    updatedAt: '2026-01-18T15:45:00Z',
   },
 ];
 
@@ -93,7 +174,8 @@ function filterMockPatients(
       const searchLower = filters.search.toLowerCase();
       const matchesSearch =
         patient.fullName.toLowerCase().includes(searchLower) ||
-        patient.abhaNumber.toLowerCase().includes(searchLower) ||
+        patient.id.toLowerCase().includes(searchLower) ||
+        patient.abhaNumber?.toLowerCase().includes(searchLower) ||
         patient.phone?.toLowerCase().includes(searchLower);
       if (!matchesSearch) return false;
     }
@@ -146,7 +228,7 @@ export const patientService = {
    */
   async getPatients(
     page: number = 1,
-    pageSize: number = 10,
+    pageSize: number = 8,
     filters: PatientFilters = { search: '', status: 'all', gender: 'all' }
   ): Promise<PatientsResponse> {
     try {
@@ -216,20 +298,20 @@ export const patientService = {
       if (!response.ok) {
         // Fallback: create mock patient
         const newPatient: Patient = {
-          id: `p-${Date.now()}`,
+          id: `${Date.now()}`,
           firstName: data.firstName,
           lastName: data.lastName,
           fullName: `${data.firstName} ${data.lastName}`,
-          abhaNumber: data.abhaNumber,
+          abhaNumber: data.abhaNumber || '',
           email: data.email,
           phone: data.phone,
           dateOfBirth: data.dateOfBirth,
           gender: data.gender,
-          status: 'LINKED',
+          status: data.abhaNumber ? 'LINKED' : 'NOT_LINKED',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        mockPatients.push(newPatient);
+        mockPatients.unshift(newPatient);
         return newPatient;
       }
 
@@ -237,20 +319,20 @@ export const patientService = {
       if (!contentType?.includes('application/json')) {
         // Fallback: create mock patient
         const newPatient: Patient = {
-          id: `p-${Date.now()}`,
+          id: `${Date.now()}`,
           firstName: data.firstName,
           lastName: data.lastName,
           fullName: `${data.firstName} ${data.lastName}`,
-          abhaNumber: data.abhaNumber,
+          abhaNumber: data.abhaNumber || '',
           email: data.email,
           phone: data.phone,
           dateOfBirth: data.dateOfBirth,
           gender: data.gender,
-          status: 'LINKED',
+          status: data.abhaNumber ? 'LINKED' : 'NOT_LINKED',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        mockPatients.push(newPatient);
+        mockPatients.unshift(newPatient);
         return newPatient;
       }
 
@@ -258,20 +340,20 @@ export const patientService = {
     } catch {
       // Fallback: create mock patient
       const newPatient: Patient = {
-        id: `p-${Date.now()}`,
+        id: `${Date.now()}`,
         firstName: data.firstName,
         lastName: data.lastName,
         fullName: `${data.firstName} ${data.lastName}`,
-        abhaNumber: data.abhaNumber,
+        abhaNumber: data.abhaNumber || '',
         email: data.email,
         phone: data.phone,
         dateOfBirth: data.dateOfBirth,
         gender: data.gender,
-        status: 'LINKED',
+        status: data.abhaNumber ? 'LINKED' : 'NOT_LINKED',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      mockPatients.push(newPatient);
+      mockPatients.unshift(newPatient);
       return newPatient;
     }
   },

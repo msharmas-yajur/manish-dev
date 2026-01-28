@@ -1,7 +1,9 @@
-export { PatientStatusBadge } from './PatientStatusBadge';
-export { PatientActionMenu } from './PatientActionMenu';
-export { PatientTableRow } from './PatientTableRow';
-export { PatientTable } from './PatientTable';
-export { PatientFilters } from './PatientFilters';
-export { CreatePatientPanel } from './CreatePatientPanel';
+// Barrel exports for patient components
 export { PatientList } from './PatientList';
+export { PatientTable } from './PatientTable';
+export { PatientSearchBar } from './PatientSearchBar';
+export { PatientStatusBadge } from './PatientStatusBadge';
+export { CreatePatientDialog } from './CreatePatientDialog';
+export { CreatePatientPanel } from './CreatePatientPanel';
+export { PatientFilters } from './PatientFilters';
+export { PatientActionMenu } from './PatientActionMenu';

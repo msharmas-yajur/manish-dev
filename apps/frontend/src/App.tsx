@@ -3,6 +3,7 @@ import { Box, Toolbar } from '@mui/material';
 import { Dashboard } from '@features/dashboard';
 import { Users } from '@features/users';
 import { PatientList } from '@features/patients';
+import { SettingsPage } from '@features/settings';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -111,6 +112,14 @@ function App() {
             element={
               <MainLayout>
                 <Users />
+              </MainLayout>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <MainLayout>
+                <SettingsPage />
               </MainLayout>
             }
           />
