@@ -305,29 +305,6 @@ services:
     networks:
       - app-network
 
-  # CopilotKit Runtime
-  copilot:
-    build:
-      context: ./apps/copilot
-      dockerfile: Dockerfile
-    container_name: manish-copilot
-    ports:
-      - "3002:3002"
-    environment:
-      PORT: 3002
-      LLM_SERVICE_URL: http://llm-service:8003
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-    depends_on:
-      - llm-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-    networks:
-      - app-network
-
   # ===========================================
   # Phase 4: Real-time & Healthcare
   # ===========================================
@@ -405,6 +382,8 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+    profiles:
+      - website
 
   # WordPress CMS (Headless)
   wordpress:
@@ -440,6 +419,8 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+    profiles:
+      - website
 
   # Company Website Frontend (Next.js)
   website:
@@ -464,6 +445,8 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+    profiles:
+      - website
 
   # phpMyAdmin (optional, for database management)
   phpmyadmin:

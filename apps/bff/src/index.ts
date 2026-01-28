@@ -58,8 +58,8 @@ app.use(requestLogger);
 app.use('/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/roles', rolesRouter);
-app.use('/api', rolesRouter); // Also mount for /api/users/:userId/roles paths
-app.use('/api', proxyRouter);
+app.use('/api', proxyRouter); // Proxy must come before generic rolesRouter to handle /api/backend/* and /api/llm/*
+app.use('/api', rolesRouter); // For /api/users/:userId/roles paths - placed after proxyRouter
 
 // Error handling
 app.use(errorHandler);

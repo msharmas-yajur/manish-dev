@@ -1,5 +1,25 @@
 # Caladrius Health AI Studio
 
+---
+## >>> RESUME HERE <<<
+
+**Current Focus:** Application Framework - Layout System
+**Task File:** `/docs/PROJECT_TASKS.md`
+**Designs:** `/docs/ScreenDesigns/*.jpeg`
+
+**Next Tasks to Pick Up:**
+1. A-001: Create LayoutContext (`src/contexts/LayoutContext.tsx`)
+2. A-002: Create Tools Config (`src/features/tools/config/toolsConfig.ts`)
+3. A-003: Create CopilotTool (`src/features/tools/components/CopilotTool.tsx`)
+4. A-004: Create IframeTool (`src/features/tools/components/IframeTool.tsx`)
+5. A-005: Create Navigation Config (`src/components/layout/config/navigationConfig.ts`)
+
+These 5 tasks have NO dependencies and can run in parallel.
+
+**After completing tasks:** Update this section with next tasks and mark completed in `/docs/PROJECT_TASKS.md`
+
+---
+
 ## Project Overview
 Healthcare application with multi-container microservices architecture designed for clinical workflows, patient management, and AI-assisted medical decision support.
 
@@ -28,6 +48,52 @@ docker compose ps                       # Check status
 docker compose logs -f <service>        # View logs
 docker compose build --no-cache <svc>   # Rebuild service
 ```
+
+---
+
+## Current Sprint
+
+> **Last Updated:** January 28, 2026
+> **Focus:** Application Framework - Layout System
+
+### Active Work
+Implementing Material Design 3 layout with collapsible navigation drawers (Gmail-style):
+- **Left Drawer:** Role-based navigation menu (collapsible)
+- **Right Drawer:** Tools panel with CopilotKit, Snowstorm, SNOMED CT, etc.
+- **Content Area:** Adjusts based on drawer states
+
+### Task Tracking
+**Master Task File:** `/docs/PROJECT_TASKS.md`
+
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| Phase 1: Foundation | A-001 to A-005 | Pending (can run in parallel) |
+| Phase 2: Core Components | A-006 to A-010 | Pending (after Phase 1) |
+| Phase 3: Assembly | A-011, A-012 | Pending (after Phase 2) |
+| Phase 4: Integration | A-013, A-014 | Pending (final) |
+
+### Design References
+Screenshots in `/docs/ScreenDesigns/`:
+- `Patient List.jpeg` - Main layout, drawers collapsed
+- `Patient List With Left Navbar Drawer.jpeg` - Left drawer expanded
+- `Patient List With CoPilotKit.jpeg` - Right panel with AI chat
+- `Patient List - Create New Patients Option.jpeg` - Create patient modal
+
+### Key Layout Dimensions
+| Component | Width | Behavior |
+|-----------|-------|----------|
+| Left Rail | 56px | Always visible, icons only |
+| Left Drawer | +180px | Expands on toggle |
+| Right Rail | 56px | Always visible, tool icons |
+| Right Panel | +400px | Expands when tool selected |
+| AppBar | 64px height | Fixed top |
+
+### Quick Resume Command
+```
+"Continue from PROJECT_TASKS.md - implementing application framework layout"
+```
+
+---
 
 ## Project Structure
 ```

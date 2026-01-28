@@ -17,7 +17,11 @@ export const authService = {
       if (!contentType?.includes('application/json')) {
         throw new Error('Backend not available');
       }
-      return response.json();
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Login failed');
+      }
+      return result.data;
     } catch {
       throw new Error('Login service unavailable');
     }
@@ -37,7 +41,11 @@ export const authService = {
       if (!contentType?.includes('application/json')) {
         throw new Error('Backend not available');
       }
-      return response.json();
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Registration failed');
+      }
+      return result.data;
     } catch {
       throw new Error('Registration service unavailable');
     }
@@ -53,13 +61,20 @@ export const authService = {
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await fetch(`${API_BASE}/me`);
+      const token = localStorage.getItem('caladrius_auth_token');
+      if (!token) return null;
+
+      const response = await fetch(`${API_BASE}/me`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
       if (!response.ok) return null;
       const contentType = response.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         return null;
       }
-      return response.json();
+      const result = await response.json();
+      if (!result.success) return null;
+      return result.data;
     } catch {
       return null;
     }

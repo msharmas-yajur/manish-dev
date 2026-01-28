@@ -11,7 +11,8 @@ import { AuthCallback } from './pages/AuthCallback';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar, SIDEBAR_WIDTH } from './components/layout/Sidebar';
-import { CopilotProvider, CopilotSidebar } from './components/Copilot';
+// CopilotKit integration disabled for now
+// import { CopilotProvider, CopilotSidebar } from './components/Copilot';
 import './App.css';
 
 /**
@@ -43,31 +44,28 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
 /**
  * Main application layout component
- * Wraps the app with CopilotKit provider and includes the AI sidebar
+ * CopilotKit integration disabled for now
  */
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <CopilotProvider>
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        minWidth: '1024px', // Desktop-only constraint
+      }}
+    >
       <Box
+        component="main"
         sx={{
+          flexGrow: 1,
           display: 'flex',
-          minHeight: '100vh',
-          minWidth: '1024px', // Desktop-only constraint
+          flexDirection: 'column',
         }}
       >
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {children}
-        </Box>
-        <CopilotSidebar />
+        {children}
       </Box>
-    </CopilotProvider>
+    </Box>
   );
 }
 
