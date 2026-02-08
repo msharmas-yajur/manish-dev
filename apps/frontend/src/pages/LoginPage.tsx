@@ -33,6 +33,7 @@ export function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [frappeEnabled, setFrappeEnabled] = useState(false);
 
   // Redirect to patients page if already authenticated
   useEffect(() => {
@@ -47,11 +48,15 @@ export function LoginPage() {
       try {
         const response = await fetch('/api/auth/providers');
         const data = await response.json();
-        if (data.success && data.data?.providers?.google) {
+        const providers = data.data?.providers;
+        if (data.success && providers?.google) {
           setGoogleEnabled(true);
         }
+        if (data.success && providers?.frappe) {
+          setFrappeEnabled(true);
+        }
       } catch {
-        // Google OAuth not available
+        // OAuth providers not available
       }
     };
     checkProviders();
@@ -61,6 +66,8 @@ export function LoginPage() {
     const errorParam = params.get('error');
     if (errorParam === 'google_auth_failed') {
       setError('Google authentication failed. Please try again.');
+    } else if (errorParam === 'frappe_auth_failed') {
+      setError('ERPNext authentication failed. Please try again.');
     }
   }, []);
 
@@ -302,6 +309,42 @@ export function LoginPage() {
                     }}
                   >
                     {isGoogleLoading ? 'Redirecting...' : 'Continue with Google'}
+                  </Button>
+                </>
+              )}
+
+              {frappeEnabled && (
+                <>
+                  {!googleEnabled && (
+                    <Divider sx={{ my: 3 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        OR
+                      </Typography>
+                    </Divider>
+                  )}
+
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="large"
+                    disabled={authLoading || isGoogleLoading}
+                    onClick={() => {
+                      setError(null);
+                      window.location.href = '/api/auth/frappe';
+                    }}
+                    startIcon={<LocalHospital />}
+                    sx={{
+                      py: 1.5,
+                      mb: 2,
+                      borderColor: '#00897B',
+                      color: '#00897B',
+                      '&:hover': {
+                        borderColor: '#00695C',
+                        backgroundColor: 'rgba(0, 137, 123, 0.04)',
+                      },
+                    }}
+                  >
+                    Continue with ERPNext
                   </Button>
                 </>
               )}

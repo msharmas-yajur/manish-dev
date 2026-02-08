@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN DEFAULT true,
     -- OAuth fields
     google_id VARCHAR(255) UNIQUE,
-    auth_provider VARCHAR(50) DEFAULT 'local',  -- 'local', 'google'
+    frappe_id VARCHAR(255) UNIQUE,
+    auth_provider VARCHAR(50) DEFAULT 'local',  -- 'local', 'google', 'frappe'
     -- Password reset fields
     password_reset_token VARCHAR(255),
     password_reset_expires TIMESTAMP WITH TIME ZONE,
@@ -251,6 +252,7 @@ CREATE INDEX IF NOT EXISTS idx_llm_models_provider ON llm_models(provider_id);
 CREATE INDEX IF NOT EXISTS idx_user_pipeline_configs_user ON user_pipeline_configs(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_pipeline_configs_pipeline ON user_pipeline_configs(pipeline_type_id);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+CREATE INDEX IF NOT EXISTS idx_users_frappe_id ON users(frappe_id);
 CREATE INDEX IF NOT EXISTS idx_users_password_reset_token ON users(password_reset_token);
 
 -- Apply triggers to new tables

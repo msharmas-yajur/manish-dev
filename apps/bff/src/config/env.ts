@@ -38,6 +38,15 @@ export const config = {
     callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback',
   },
 
+  // Frappe/ERPNext OAuth
+  frappe: {
+    clientId: process.env.FRAPPE_OAUTH_CLIENT_ID || '',
+    clientSecret: process.env.FRAPPE_OAUTH_CLIENT_SECRET || '',
+    url: process.env.FRAPPE_URL || 'http://localhost:8090',
+    internalUrl: process.env.FRAPPE_INTERNAL_URL || 'http://frappe-frontend:8080',
+    callbackUrl: process.env.FRAPPE_CALLBACK_URL || 'http://localhost:3001/api/auth/frappe/callback',
+  },
+
   // Session
   sessionSecret: process.env.SESSION_SECRET || 'session-secret-change-in-production',
 

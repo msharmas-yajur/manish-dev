@@ -195,14 +195,30 @@ infrastructure/
 
 ### Authentication & Authorization
 
-#### Decision: JWT + Google OAuth
-- **Date**: Jan 2026
-- **Context**: Need secure authentication for healthcare app
-- **Choice**: JWT tokens with 24h expiry + Google OAuth 2.0
+#### Decision: JWT + Multi-Provider OAuth
+- **Date**: Jan 2026 (updated Feb 2026)
+- **Context**: Need secure authentication for healthcare app with optional ERPNext SSO
+- **Choice**: JWT tokens with 24h expiry + Google OAuth 2.0 + Frappe/ERPNext OAuth 2.0
 - **Rationale**:
   - JWT for stateless auth, works across microservices
   - Google OAuth for enterprise SSO, HIPAA-friendly
+  - Frappe OAuth for ERPNext SSO (loosely coupled, optional)
   - Session-less design (no server-side sessions)
+
+#### Decision: Frappe/ERPNext OAuth Integration (Loose Coupling)
+- **Date**: Feb 2026
+- **Context**: Use ERPNext's user base for authentication without tight coupling
+- **Choice**: Frappe as OAuth2 provider via Authorization Code grant
+- **Rationale**:
+  - Follows same pattern as Google OAuth (additive, no existing code modified)
+  - App works without Frappe running (button hidden when provider unavailable)
+  - Account linking: existing email users auto-linked on first Frappe login
+  - Manual OAuth2 flow (no passport strategy needed)
+- **Endpoints Used**:
+  - Authorize: `GET /api/method/frappe.integrations.oauth2.authorize`
+  - Token: `POST /api/method/frappe.integrations.oauth2.get_token`
+  - Profile: `GET /api/method/frappe.integrations.oauth2.openid_profile`
+- **Setup**: Create OAuth Client in Frappe admin, set env vars `FRAPPE_OAUTH_CLIENT_ID` and `FRAPPE_OAUTH_CLIENT_SECRET`
 
 #### Decision: Role-Based Access Control (RBAC)
 - **Date**: Jan 2026
@@ -516,8 +532,9 @@ users (
   email VARCHAR(255) UNIQUE,
   password_hash VARCHAR(255),      -- NULL for OAuth-only
   role VARCHAR(50) DEFAULT 'user', -- Legacy, use user_roles
-  google_id VARCHAR(255),          -- For OAuth
-  auth_provider VARCHAR(50),       -- 'local' | 'google'
+  google_id VARCHAR(255),          -- For Google OAuth
+  frappe_id VARCHAR(255),          -- For Frappe/ERPNext OAuth
+  auth_provider VARCHAR(50),       -- 'local' | 'google' | 'frappe'
   password_reset_token VARCHAR(255),
   password_reset_expires TIMESTAMP
 )
@@ -551,7 +568,9 @@ user_pipeline_configs (user_id, pipeline_type_id, model_id, temperature, ...)
 - `POST /api/auth/logout` - Logout
 - `GET /api/auth/google` - Start Google OAuth
 - `GET /api/auth/google/callback` - OAuth callback
-- `GET /api/auth/providers` - Available auth methods
+- `GET /api/auth/frappe` - Start Frappe/ERPNext OAuth
+- `GET /api/auth/frappe/callback` - Frappe OAuth callback
+- `GET /api/auth/providers` - Available auth methods (local, google, frappe)
 - `POST /api/auth/forgot-password` - Request reset
 - `GET /api/auth/verify-reset-token/:token` - Verify token
 - `POST /api/auth/reset-password` - Reset with token
@@ -647,7 +666,9 @@ docker exec manish-redis redis-cli -a change_me_in_production \
 ## Environment Variables
 
 See `.env.example` for full list. Key variables:
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - OAuth
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Google OAuth
+- `FRAPPE_OAUTH_CLIENT_ID` / `FRAPPE_OAUTH_CLIENT_SECRET` - Frappe/ERPNext OAuth
+- `FRAPPE_URL` / `FRAPPE_INTERNAL_URL` / `FRAPPE_CALLBACK_URL` - Frappe OAuth URLs
 - `JWT_SECRET` - Token signing
 - `ENCRYPTION_KEY` - API key encryption (32 chars)
 - `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` - LLM providers

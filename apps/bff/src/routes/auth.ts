@@ -417,7 +417,176 @@ authRouter.get(
   }
 );
 
-// Check if Google OAuth is available
+// =============================================
+// Frappe/ERPNext OAuth Routes
+// =============================================
+
+// Initiate Frappe OAuth flow
+authRouter.get('/frappe', (req: Request, res: Response) => {
+  if (!config.frappe.clientId) {
+    return res.status(503).json({
+      success: false,
+      error: { message: 'Frappe OAuth is not configured' },
+    });
+  }
+
+  // Generate state parameter for CSRF protection
+  const state = crypto.randomBytes(16).toString('hex');
+  (req.session as Record<string, unknown>).frappeOAuthState = state;
+
+  const params = new URLSearchParams({
+    client_id: config.frappe.clientId,
+    response_type: 'code',
+    redirect_uri: config.frappe.callbackUrl,
+    scope: 'openid email profile',
+    state,
+  });
+
+  res.redirect(
+    `${config.frappe.url}/api/method/frappe.integrations.oauth2.authorize?${params.toString()}`
+  );
+});
+
+// Frappe OAuth callback
+authRouter.get('/frappe/callback', async (req: Request, res: Response) => {
+  try {
+    const { code, state } = req.query;
+    const sessionState = (req.session as Record<string, unknown>).frappeOAuthState;
+
+    // Verify state to prevent CSRF
+    if (!state || state !== sessionState) {
+      logger.warn('Frappe OAuth: state mismatch');
+      return res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
+    }
+
+    // Clear state from session
+    delete (req.session as Record<string, unknown>).frappeOAuthState;
+
+    if (!code) {
+      logger.warn('Frappe OAuth: no authorization code received');
+      return res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
+    }
+
+    // Exchange authorization code for access token
+    const tokenResponse = await fetch(
+      `${config.frappe.internalUrl}/api/method/frappe.integrations.oauth2.get_token`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: code as string,
+          redirect_uri: config.frappe.callbackUrl,
+          client_id: config.frappe.clientId,
+          client_secret: config.frappe.clientSecret,
+        }).toString(),
+      }
+    );
+
+    if (!tokenResponse.ok) {
+      logger.error({ status: tokenResponse.status }, 'Frappe OAuth: token exchange failed');
+      return res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    if (!accessToken) {
+      logger.error('Frappe OAuth: no access token in response');
+      return res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
+    }
+
+    // Fetch user profile from Frappe
+    const profileResponse = await fetch(
+      `${config.frappe.internalUrl}/api/method/frappe.integrations.oauth2.openid_profile`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    if (!profileResponse.ok) {
+      logger.error({ status: profileResponse.status }, 'Frappe OAuth: profile fetch failed');
+      return res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
+    }
+
+    const profile = await profileResponse.json();
+    const frappeId = profile.sub || profile.email;
+    const email = profile.email;
+    const firstName = profile.given_name || profile.name?.split(' ')[0] || '';
+    const lastName = profile.family_name || profile.name?.split(' ').slice(1).join(' ') || '';
+
+    if (!email) {
+      logger.error('Frappe OAuth: no email in profile');
+      return res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
+    }
+
+    // Look up or create user (3 scenarios, same as Google OAuth)
+    let user;
+
+    // 1. Check if frappe_id already exists
+    const existingFrappeUser = await pgPool.query(
+      'SELECT id, email, role, first_name, last_name FROM users WHERE frappe_id = $1',
+      [frappeId]
+    );
+
+    if (existingFrappeUser.rows.length > 0) {
+      user = existingFrappeUser.rows[0];
+      logger.info({ userId: user.id, email: user.email }, 'Frappe OAuth: existing user login');
+    } else {
+      // 2. Check if email matches an existing user (link accounts)
+      const existingEmailUser = await pgPool.query(
+        'SELECT id, email, role, first_name, last_name FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (existingEmailUser.rows.length > 0) {
+        user = existingEmailUser.rows[0];
+        // Link Frappe account to existing user
+        await pgPool.query(
+          'UPDATE users SET frappe_id = $1 WHERE id = $2',
+          [frappeId, user.id]
+        );
+        logger.info({ userId: user.id, email: user.email }, 'Frappe OAuth: linked to existing user');
+      } else {
+        // 3. Create new user
+        const newUser = await pgPool.query(
+          `INSERT INTO users (email, frappe_id, first_name, last_name, role, auth_provider)
+           VALUES ($1, $2, $3, $4, 'user', 'frappe')
+           RETURNING id, email, role, first_name, last_name`,
+          [email, frappeId, firstName, lastName]
+        );
+        user = newUser.rows[0];
+
+        // Assign default role
+        await assignDefaultRole(user.id);
+        logger.info({ userId: user.id, email: user.email }, 'Frappe OAuth: new user created');
+      }
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      config.jwtSecret,
+      { expiresIn: '24h' }
+    );
+
+    logger.info({ userId: user.id, email: user.email }, 'Frappe OAuth successful');
+
+    // Redirect to frontend with token
+    res.redirect(
+      `${config.frontendUrl}/auth/callback?token=${token}&provider=frappe`
+    );
+  } catch (error) {
+    logger.error({ error }, 'Frappe OAuth callback error');
+    res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
+  }
+});
+
+// =============================================
+// Provider Discovery
+// =============================================
+
+// Check available auth providers
 authRouter.get('/providers', (req: Request, res: Response) => {
   res.json({
     success: true,
@@ -425,6 +594,7 @@ authRouter.get('/providers', (req: Request, res: Response) => {
       providers: {
         local: true,
         google: !!config.google.clientId,
+        frappe: !!config.frappe.clientId,
       },
     },
   });
