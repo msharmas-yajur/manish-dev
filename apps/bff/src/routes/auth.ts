@@ -432,7 +432,7 @@ authRouter.get('/frappe', (req: Request, res: Response) => {
 
   // Generate state parameter for CSRF protection
   const state = crypto.randomBytes(16).toString('hex');
-  (req.session as Record<string, unknown>).frappeOAuthState = state;
+  (req.session as unknown as Record<string, unknown>).frappeOAuthState = state;
 
   const params = new URLSearchParams({
     client_id: config.frappe.clientId,
@@ -451,7 +451,7 @@ authRouter.get('/frappe', (req: Request, res: Response) => {
 authRouter.get('/frappe/callback', async (req: Request, res: Response) => {
   try {
     const { code, state } = req.query;
-    const sessionState = (req.session as Record<string, unknown>).frappeOAuthState;
+    const sessionState = (req.session as unknown as Record<string, unknown>).frappeOAuthState;
 
     // Verify state to prevent CSRF
     if (!state || state !== sessionState) {
@@ -460,7 +460,7 @@ authRouter.get('/frappe/callback', async (req: Request, res: Response) => {
     }
 
     // Clear state from session
-    delete (req.session as Record<string, unknown>).frappeOAuthState;
+    delete (req.session as unknown as Record<string, unknown>).frappeOAuthState;
 
     if (!code) {
       logger.warn('Frappe OAuth: no authorization code received');
@@ -488,7 +488,7 @@ authRouter.get('/frappe/callback', async (req: Request, res: Response) => {
       return res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
     }
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = await tokenResponse.json() as { access_token?: string };
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
@@ -509,7 +509,10 @@ authRouter.get('/frappe/callback', async (req: Request, res: Response) => {
       return res.redirect(`${config.frontendUrl}/login?error=frappe_auth_failed`);
     }
 
-    const profile = await profileResponse.json();
+    const profile = await profileResponse.json() as {
+      sub?: string; email?: string; name?: string;
+      given_name?: string; family_name?: string;
+    };
     const frappeId = profile.sub || profile.email;
     const email = profile.email;
     const firstName = profile.given_name || profile.name?.split(' ')[0] || '';

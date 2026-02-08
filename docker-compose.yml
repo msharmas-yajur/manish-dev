@@ -115,6 +115,12 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/auth/google/callback}
+      # Frappe/ERPNext OAuth
+      FRAPPE_OAUTH_CLIENT_ID: ${FRAPPE_OAUTH_CLIENT_ID:-}
+      FRAPPE_OAUTH_CLIENT_SECRET: ${FRAPPE_OAUTH_CLIENT_SECRET:-}
+      FRAPPE_URL: ${FRAPPE_URL:-http://localhost:8090}
+      FRAPPE_INTERNAL_URL: ${FRAPPE_INTERNAL_URL:-http://manish-frappe-frontend:8080}
+      FRAPPE_CALLBACK_URL: ${FRAPPE_CALLBACK_URL:-http://localhost:3001/api/auth/frappe/callback}
       # Security
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       SESSION_SECRET: ${SESSION_SECRET:-session-secret-change-in-production}
