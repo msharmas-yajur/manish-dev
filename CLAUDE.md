@@ -117,6 +117,8 @@ apps/
 ├── llm-service/      # Multi-provider LLM router
 ├── workers/          # Celery workers
 └── copilot-service/  # CopilotKit runtime (Node.js, port 8004) - Planned
+infrastructure/
+└── frappe/           # Frappe/ERPNext MariaDB config (utf8mb4)
 packages/
 ├── shared-types/     # Shared TypeScript types
 ├── shared-utils/     # Shared utilities
@@ -184,6 +186,8 @@ infrastructure/
 | WordPress  | 8082  |
 | MariaDB    | 3307  |
 | Website (Next.js) | 8084 |
+| ERPNext (Frappe) | 8090 |
+| Frappe MariaDB | 3308 |
 
 ---
 
@@ -410,6 +414,16 @@ CREATE TABLE copilot_action_audit (
   - TypeScript types for medical coding
   - Completed in 5 minutes via 6 parallel agents
 
+- [x] **Phase 6: Frappe/ERPNext v16 Integration (Provisioned)** - Feb 8, 2026
+  - Added 8-container ERPNext stack (frappe-db, configurator, backend, frontend, websocket, 2 queue workers, scheduler)
+  - Dedicated MariaDB 10.6 on port 3308 with utf8mb4 charset
+  - Reuses existing Redis (DB slots 1-3 for cache/queue/socketio)
+  - ERPNext UI at port 8090
+  - Site created: `erpnext.localhost` (admin: `Administrator` / `admin123456`)
+  - Installed apps: Frappe 16.5.0, ERPNext 16.4.1, Healthcare 16.0.3 (version-16 branch)
+  - Shared volumes (`frappe_apps`, `frappe_env`) across all containers for runtime app installs
+  - Fixed: gunicorn full path, `FRAPPE_SITE_NAME_HEADER`, health check Host header
+
 ### Pending
 - [ ] Phase 4b: LiveKit telehealth integration
 - [ ] Phase 5: Frontend integration with all services
@@ -417,6 +431,79 @@ CREATE TABLE copilot_action_audit (
 - [ ] Email service for password reset
 - [ ] Apply RBAC middleware to protect existing routes (patients, appointments, etc.)
 - [ ] Company Website (CMS) - See Planning section below
+
+---
+
+## Frappe/ERPNext Integration
+
+### Architecture
+- **Image**: `frappe/erpnext:v16` (Frappe 16.5.0, ERPNext 16.4.1)
+- **Entry point**: http://localhost:8090
+- **Login**: `Administrator` / `admin123456`
+- **Database**: Dedicated MariaDB 10.6 (`manish-frappe-db`, port 3308)
+- **Redis**: Shared with app stack — DB 1 (cache), DB 2 (queue), DB 3 (socketio)
+- **Config**: `infrastructure/frappe/mariadb.cnf` — enforces utf8mb4 charset
+
+### Installed Apps
+| App | Version | Branch |
+|-----|---------|--------|
+| Frappe | 16.5.0 | — |
+| ERPNext | 16.4.1 | — |
+| Healthcare | 16.0.3 | version-16 |
+
+### Services
+| Container | Role |
+|-----------|------|
+| `manish-frappe-db` | MariaDB 10.6 (Frappe-dedicated) |
+| `manish-frappe-configurator` | One-time init (writes common_site_config.json) |
+| `manish-frappe-backend` | Gunicorn app server (internal) |
+| `manish-frappe-frontend` | Nginx reverse proxy (port 8090) |
+| `manish-frappe-websocket` | Socket.IO real-time updates |
+| `manish-frappe-queue-short` | Short/default background jobs |
+| `manish-frappe-queue-long` | Long-running background jobs |
+| `manish-frappe-scheduler` | Cron/scheduled tasks |
+
+### Shared Volumes
+All Frappe containers share these volumes so `bench get-app` installs are visible everywhere:
+- `frappe_sites` — `/home/frappe/frappe-bench/sites`
+- `frappe_logs` — `/home/frappe/frappe-bench/logs`
+- `frappe_apps` — `/home/frappe/frappe-bench/apps`
+- `frappe_env` — `/home/frappe/frappe-bench/env`
+
+### First-Time Setup (Already Completed)
+```bash
+# After docker compose up -d, wait for frappe-configurator to exit cleanly, then:
+
+# Create site
+docker exec manish-frappe-backend bench new-site erpnext.localhost \
+  --mariadb-root-password frappe_secret \
+  --admin-password admin123456
+
+# Set default site
+docker exec manish-frappe-backend bench use erpnext.localhost
+
+# Install ERPNext
+docker exec manish-frappe-backend bench --site erpnext.localhost install-app erpnext
+
+# Install Healthcare module (MUST use version-16 branch)
+docker exec manish-frappe-backend bench get-app healthcare --branch version-16
+docker exec manish-frappe-backend bench --site erpnext.localhost install-app healthcare
+
+# Enable scheduler
+docker exec manish-frappe-backend bench --site erpnext.localhost enable-scheduler
+```
+
+### Key Gotchas
+- **Gunicorn path**: Must use `/home/frappe/frappe-bench/env/bin/gunicorn` (not bare `gunicorn`) — it's not in PATH
+- **Site name header**: `FRAPPE_SITE_NAME_HEADER` must be `erpnext.localhost` (not `$$host`) for localhost access
+- **Health check**: Backend health check must include `-H "Host: erpnext.localhost"` in curl
+- **Healthcare branch**: `develop` branch is incompatible with ERPNext v16 — use `--branch version-16`
+- **"All Customer Groups" error**: Non-blocking during healthcare install — resolved during setup wizard
+
+### Environment Variables
+- `FRAPPE_DB_PASSWORD` — MariaDB root + app password (default: `frappe_secret`)
+- `FRAPPE_ADMIN_PASSWORD` — ERPNext admin UI password
+- `FRAPPE_SITE_NAME` — site name (default: `erpnext.localhost`)
 
 ---
 

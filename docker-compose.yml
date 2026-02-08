@@ -467,6 +467,186 @@ services:
       - debug
 
 # ===========================================
+# Phase 6: ERPNext / Frappe (v16)
+# Access: http://localhost:8090
+# Post-setup: see README for site creation steps
+# ===========================================
+
+  # Dedicated MariaDB for Frappe (utf8mb4 required)
+  frappe-db:
+    image: mariadb:10.6
+    container_name: manish-frappe-db
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${FRAPPE_DB_PASSWORD:-frappe_secret}
+      MYSQL_DATABASE: frappe
+      MYSQL_USER: frappe
+      MYSQL_PASSWORD: ${FRAPPE_DB_PASSWORD:-frappe_secret}
+    volumes:
+      - frappe_db_data:/var/lib/mysql
+      - ./infrastructure/frappe/mariadb.cnf:/etc/mysql/conf.d/frappe.cnf:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # One-time configurator — writes common_site_config.json
+  frappe-configurator:
+    image: frappe/erpnext:v16
+    container_name: manish-frappe-configurator
+    command:
+      - >
+        ls -1 apps > sites/apps.txt;
+        bench set-config -g db_host frappe-db;
+        bench set-config -gp db_port 3306;
+        bench set-config -g redis_cache "redis://:${REDIS_PASSWORD:-manish_secret}@redis:6379/1";
+        bench set-config -g redis_queue "redis://:${REDIS_PASSWORD:-manish_secret}@redis:6379/2";
+        bench set-config -g redis_socketio "redis://:${REDIS_PASSWORD:-manish_secret}@redis:6379/3";
+        bench set-config -gp socketio_port 9000;
+    entrypoint: ["bash", "-c"]
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+      - frappe_logs:/home/frappe/frappe-bench/logs
+      - frappe_apps:/home/frappe/frappe-bench/apps
+      - frappe_env:/home/frappe/frappe-bench/env
+    depends_on:
+      frappe-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - app-network
+
+  # Frappe backend — app server
+  frappe-backend:
+    image: frappe/erpnext:v16
+    container_name: manish-frappe-backend
+    command: ["/home/frappe/frappe-bench/env/bin/gunicorn", "--chdir=/home/frappe/frappe-bench/sites", "--bind=0.0.0.0:8000", "--timeout=120", "--workers=2", "--worker-class=gthread", "--threads=4", "--worker-tmp-dir=/dev/shm", "--preload", "frappe.app:application"]
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+      - frappe_logs:/home/frappe/frappe-bench/logs
+      - frappe_apps:/home/frappe/frappe-bench/apps
+      - frappe_env:/home/frappe/frappe-bench/env
+    depends_on:
+      frappe-configurator:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-H", "Host: erpnext.localhost", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Frappe frontend — Nginx reverse proxy
+  frappe-frontend:
+    image: frappe/erpnext:v16
+    container_name: manish-frappe-frontend
+    command: ["nginx-entrypoint.sh"]
+    ports:
+      - "8090:8080"
+    environment:
+      BACKEND: frappe-backend:8000
+      FRAPPE_SITE_NAME_HEADER: erpnext.localhost
+      SOCKETIO: frappe-websocket:9000
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      PROXY_READ_TIMEOUT: 120s
+      CLIENT_MAX_BODY_SIZE: 50m
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+      - frappe_logs:/home/frappe/frappe-bench/logs
+      - frappe_apps:/home/frappe/frappe-bench/apps
+      - frappe_env:/home/frappe/frappe-bench/env
+    depends_on:
+      - frappe-backend
+      - frappe-websocket
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Frappe websocket — Socket.IO
+  frappe-websocket:
+    image: frappe/erpnext:v16
+    container_name: manish-frappe-websocket
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+      - frappe_logs:/home/frappe/frappe-bench/logs
+      - frappe_apps:/home/frappe/frappe-bench/apps
+      - frappe_env:/home/frappe/frappe-bench/env
+    depends_on:
+      frappe-configurator:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Frappe queue — short/default jobs
+  frappe-queue-short:
+    image: frappe/erpnext:v16
+    container_name: manish-frappe-queue-short
+    command: ["bench", "worker", "--queue", "default,short"]
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+      - frappe_logs:/home/frappe/frappe-bench/logs
+      - frappe_apps:/home/frappe/frappe-bench/apps
+      - frappe_env:/home/frappe/frappe-bench/env
+    depends_on:
+      frappe-configurator:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Frappe queue — long jobs
+  frappe-queue-long:
+    image: frappe/erpnext:v16
+    container_name: manish-frappe-queue-long
+    command: ["bench", "worker", "--queue", "long,default,short"]
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+      - frappe_logs:/home/frappe/frappe-bench/logs
+      - frappe_apps:/home/frappe/frappe-bench/apps
+      - frappe_env:/home/frappe/frappe-bench/env
+    depends_on:
+      frappe-configurator:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Frappe scheduler
+  frappe-scheduler:
+    image: frappe/erpnext:v16
+    container_name: manish-frappe-scheduler
+    command: ["bench", "schedule"]
+    volumes:
+      - frappe_sites:/home/frappe/frappe-bench/sites
+      - frappe_logs:/home/frappe/frappe-bench/logs
+      - frappe_apps:/home/frappe/frappe-bench/apps
+      - frappe_env:/home/frappe/frappe-bench/env
+    depends_on:
+      frappe-configurator:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - app-network
+
+# ===========================================
 # Networks
 # ===========================================
 networks:
@@ -484,3 +664,8 @@ volumes:
   elasticsearch_data:
   mariadb_data:
   wordpress_data:
+  frappe_db_data:
+  frappe_sites:
+  frappe_logs:
+  frappe_apps:
+  frappe_env:
