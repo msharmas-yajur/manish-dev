@@ -34,6 +34,16 @@ CREATE TABLE IF NOT EXISTS patients (
     gender VARCHAR(20),
     blood_type VARCHAR(10),
     allergies TEXT[],
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    abha_id VARCHAR(50),
+    abha_address VARCHAR(100),
+    phone VARCHAR(20),
+    email VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'NOT_LINKED',
+    erpnext_patient_id VARCHAR(100),
+    sync_source VARCHAR(20) DEFAULT 'caladrius',
+    last_synced_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -97,6 +107,9 @@ CREATE TABLE IF NOT EXISTS llm_interactions (
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_patients_mrn ON patients(medical_record_number);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_abha_id ON patients(abha_id) WHERE abha_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_patients_erpnext_id ON patients(erpnext_patient_id);
+CREATE INDEX IF NOT EXISTS idx_patients_status ON patients(status);
 CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patient_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_practitioner ON appointments(practitioner_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_scheduled ON appointments(scheduled_at);

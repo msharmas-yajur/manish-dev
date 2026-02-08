@@ -3,30 +3,31 @@
 ---
 ## >>> RESUME HERE <<<
 
-**Current Focus:** Final Integration & CopilotKit Frontend
+**Current Focus:** ERPNext Integration & Patient Sync
 **Task File:** `/docs/PROJECT_TASKS.md`
 **Code Review:** `/docs/CODE_REVIEW_REPORT.md`
 
+**Completed (Feb 8, 2026):**
+- ✅ Frappe/ERPNext v16 provisioned (8-container stack, Healthcare module)
+- ✅ Frappe OAuth2 login integration (Authorization Code grant)
+- ✅ Bidirectional Patient Sync (Caladrius <-> ERPNext) — all 6 phases
+- ✅ Frappe custom app `caladrius_integration` installed
+- ✅ 4 custom fields on ERPNext Patient DocType
+- ✅ API user + token auth for sync
+- ✅ End-to-end sync verified (patient created in both systems, loop prevention working)
+
 **Completed (Jan 28, 2026):**
-- ✅ Phase 1: Foundation (A-001 to A-005)
-- ✅ Phase 2: Core Components (A-006 to A-010)
-- ✅ Phase 3: Assembly (A-011, A-012)
+- ✅ Phase 1-3: Frontend layout (Foundation, Core Components, Assembly)
 - ✅ Patient List Feature (A-020, A-021)
 - ✅ Settings Page Feature (A-024)
 - ✅ Code Review - 8.5/10 score, 2 major issues fixed
 
 **Next Tasks to Pick Up:**
-1. A-013: Update App.tsx to use MainLayout
-2. A-014: Delete old Navbar.tsx, Sidebar.tsx
-3. P-015: CopilotKit Frontend Integration
-4. A-022: Patient Detail Page
-
-**Files Created This Session:**
-- `src/contexts/LayoutContext.tsx` - Layout state management
-- `src/components/layout/*.tsx` - AppBar, LeftRail, LeftDrawer, RightRail, RightPanel, MainLayout
-- `src/features/tools/` - Tool types, config, CopilotTool, IframeTool
-- `src/features/settings/` - Complete settings feature (Profile, Security, LLM, Connectors, Tools)
-- `src/features/patients/components/` - PatientSearchBar, CreatePatientDialog (updated PatientTable, PatientList)
+1. FHIR Patient India IG alignment (patient data model)
+2. A-013: Update App.tsx to use MainLayout
+3. A-014: Delete old Navbar.tsx, Sidebar.tsx
+4. P-015: CopilotKit Frontend Integration
+5. A-022: Patient Detail Page
 
 ---
 
@@ -40,7 +41,8 @@ Healthcare application with multi-container microservices architecture designed 
 - **Databases**: PostgreSQL 16, MongoDB 7, Redis 7
 - **AI/ML**: Multi-provider LLM service (OpenAI, Anthropic, Ollama)
 - **Healthcare**: Snowstorm (SNOMED CT), LiveKit (telehealth)
-- **Auth**: JWT + Google OAuth 2.0 + RBAC
+- **Auth**: JWT + Google OAuth 2.0 + Frappe/ERPNext OAuth 2.0 + RBAC
+- **ERP**: ERPNext v16 + Healthcare module (Frappe, port 8090)
 
 ## Architecture
 ```
@@ -49,6 +51,10 @@ Frontend (8081) → Nginx → BFF (3001) → Backend (8000) → Databases
                         Copilot Service (8004) → LLM Service (8003) → Ollama/OpenAI/Anthropic
                               ↓
                         Snowstorm (8085) - SNOMED CT
+
+Bidirectional Patient Sync:
+  BFF (3001) ←→ ERPNext/Frappe (8090) via REST API + Webhooks
+  Sync Key: ABHA ID | Loop Prevention: custom_caladrius_id flag
 ```
 
 ## Running Services
@@ -63,26 +69,25 @@ docker compose build --no-cache <svc>   # Rebuild service
 
 ## Current Sprint
 
-> **Last Updated:** January 28, 2026
-> **Focus:** Application Framework - Layout System
+> **Last Updated:** February 8, 2026
+> **Focus:** ERPNext Integration & Patient Sync
 
 ### Active Work
-Implementing Material Design 3 layout with collapsible navigation drawers (Gmail-style):
-- **Left Drawer:** Role-based navigation menu (collapsible)
-- **Right Drawer:** Tools panel with CopilotKit, Snowstorm, SNOMED CT, etc.
-- **Content Area:** Adjusts based on drawer states
+Bidirectional patient sync between Caladrius and ERPNext completed. Next: FHIR Patient India IG alignment.
 
 ### Task Tracking
 **Master Task File:** `/docs/PROJECT_TASKS.md`
 
 | Phase | Tasks | Status |
 |-------|-------|--------|
-| Phase 1: Foundation | A-001 to A-005 | ✅ Complete |
-| Phase 2: Core Components | A-006 to A-010 | ✅ Complete |
-| Phase 3: Assembly | A-011, A-012 | ✅ Complete |
-| Phase 4: Integration | A-013, A-014 | 🔲 Ready to implement |
+| Frontend Layout | A-001 to A-012 | ✅ Complete |
+| Frontend Integration | A-013, A-014 | 🔲 Ready |
 | Patient List Feature | A-020, A-021 | ✅ Complete |
 | Settings Feature | A-024 | ✅ Complete |
+| ERPNext Provisioning | Frappe v16 + Healthcare | ✅ Complete |
+| Frappe OAuth2 Login | BFF OAuth integration | ✅ Complete |
+| Patient Sync (Phases 1-6) | DB + FastAPI + BFF + Frappe app | ✅ Complete |
+| FHIR Patient India IG | Patient model alignment | 🔲 Next |
 
 ### Design References
 Screenshots in `/docs/ScreenDesigns/`:
@@ -113,6 +118,8 @@ apps/
 ├── frontend/         # React app (Vite + TypeScript) - Healthcare App
 ├── website/          # Next.js + GSAP - Company Website
 ├── bff/              # Node.js API gateway
+│   └── src/services/ # frappeClient.ts, patientSync.ts (ERPNext sync)
+│   └── src/routes/   # sync.ts (sync endpoints)
 ├── backend/          # Python FastAPI backend
 ├── llm-service/      # Multi-provider LLM router
 ├── workers/          # Celery workers
@@ -264,6 +271,20 @@ infrastructure/
   - Model selection per pipeline type (chat, summarization, coding)
   - Easy to add new providers
 
+### Bidirectional Patient Sync (Caladrius <-> ERPNext)
+
+#### Decision: BFF as Sole Integration Gateway
+- **Date**: Feb 2026
+- **Context**: Sync Patient entities between Caladrius (clinical/ABDM) and ERPNext (CRM/billing)
+- **Choice**: BFF as sole integration gateway, ABHA ID as sync key, Frappe REST API + webhooks
+- **Rationale**:
+  - Loose coupling — each system works independently
+  - BFF centralizes all sync logic (no direct backend-to-Frappe calls)
+  - Async sync via frappe.enqueue — non-blocking
+  - Infinite loop prevention via custom_caladrius_id flag + doc.flags
+- **Frappe Custom App**: caladrius_integration (hooks.py + sync/patient.py)
+- **Auth**: Dedicated API user with token-based auth (not OAuth)
+
 ### Password Reset Flow
 
 #### Decision: Google-Style Reset
@@ -398,12 +419,13 @@ CREATE TABLE copilot_action_audit (
 - [x] Phase 2: Backend Services (BFF, Python Backend)
 - [x] Phase 3a: LLM Service (multi-provider routing)
 - [x] Phase 3b: Celery Workers (embeddings, summarization, medical coding)
-- [x] Authentication: Login, Register, Google OAuth, Password Reset
+- [x] Authentication: Login, Register, Google OAuth, Frappe OAuth, Password Reset
 - [x] RBAC: Database schema, roles, permissions, role-permission mappings
 - [x] RBAC: BFF service layer with Redis caching (5-min TTL)
 - [x] RBAC: Middleware (requirePermission, requireRole, requireAdmin, requireOwnership)
 - [x] RBAC: Role management API endpoints
 - [x] RBAC: Auth returns roles and permissions on login/register
+- [x] Bidirectional Patient Sync: Caladrius <-> ERPNext (all 6 phases)
 
 ### In Progress
 - [ ] Phase 4c: CopilotKit - Patient Data Agent (Phase 3)
@@ -440,7 +462,25 @@ CREATE TABLE copilot_action_audit (
   - Shared volumes (`frappe_apps`, `frappe_env`) across all containers for runtime app installs
   - Fixed: gunicorn full path, `FRAPPE_SITE_NAME_HEADER`, health check Host header
 
+- [x] **Frappe OAuth2 Login Integration** - Feb 8, 2026
+  - Frappe as OAuth2 provider via Authorization Code grant
+  - BFF routes: `/api/auth/frappe`, `/api/auth/frappe/callback`
+  - Account linking: existing email users auto-linked on first Frappe login
+  - OAuth Client scopes must be space-separated (Frappe quirk)
+
+- [x] **Bidirectional Patient Sync (Caladrius <-> ERPNext)** - Feb 8, 2026
+  - **Phase 1**: PostgreSQL schema migration — 10 new columns on `patients` table + 3 indexes
+  - **Phase 2**: FastAPI model updates — PatientCreate/PatientResponse models, 2 new lookup endpoints
+  - **Phase 3**: BFF sync service — `frappeClient.ts` (Frappe REST API client), `patientSync.ts` (sync orchestration), `sync.ts` (3 API endpoints)
+  - **Phase 4**: Frappe custom app `caladrius_integration` — hooks.py (doc_events for Patient after_insert/on_update), sync/patient.py (webhook dispatch, Customer auto-creation)
+  - **Phase 5**: ERPNext custom fields — `custom_abha_id`, `custom_abha_address`, `custom_caladrius_id`, `custom_aadhaar_last4` on Patient DocType
+  - **Phase 6**: API user `caladrius-sync@erpnext.localhost` with token auth, site config for BFF URL + webhook secret
+  - **Verified**: End-to-end sync tested — patient created in Caladrius synced to ERPNext, webhook fired back, loop prevention working, Customer auto-created for billing
+  - **Files created**: `frappeClient.ts` (226 lines), `patientSync.ts` (417 lines), `sync.ts` (144 lines)
+  - **Files modified**: `patients.py`, `env.ts`, `index.ts`, `docker-compose.yml`, `init.sql`
+
 ### Pending
+- [ ] FHIR Patient India IG alignment (patient data model per ABDM/NHA spec)
 - [ ] Phase 4b: LiveKit telehealth integration
 - [ ] Phase 5: Frontend integration with all services
 - [ ] Admin UI for role management
@@ -516,10 +556,22 @@ docker exec manish-frappe-backend bench --site erpnext.localhost enable-schedule
 - **Healthcare branch**: `develop` branch is incompatible with ERPNext v16 — use `--branch version-16`
 - **"All Customer Groups" error**: Non-blocking during healthcare install — resolved during setup wizard
 
+### Patient Sync
+- **Direction**: Bidirectional (Caladrius <-> ERPNext)
+- **Sync Key**: ABHA ID (`abha_id` in PostgreSQL, `custom_abha_id` in ERPNext)
+- **Custom App**: `caladrius_integration` (hooks.py + sync/patient.py)
+- **Custom Fields on Patient DocType**: `custom_abha_id`, `custom_abha_address`, `custom_caladrius_id`, `custom_aadhaar_last4`
+- **API User**: `caladrius-sync@erpnext.localhost` (Healthcare Administrator + Physician + System Manager roles)
+- **Webhook**: ERPNext → BFF `POST /api/sync/webhook/erpnext/patient` (X-Webhook-Secret auth)
+- **Auto-creates** Customer record in ERPNext for billing (via `ensure_customer_for_patient` hook)
+- **Loop Prevention**: BFF sets `custom_caladrius_id` on ERPNext create → Frappe hook skips webhook if present
+
 ### Environment Variables
 - `FRAPPE_DB_PASSWORD` — MariaDB root + app password (default: `frappe_secret`)
 - `FRAPPE_ADMIN_PASSWORD` — ERPNext admin UI password
 - `FRAPPE_SITE_NAME` — site name (default: `erpnext.localhost`)
+- `FRAPPE_API_KEY` / `FRAPPE_API_SECRET` — Frappe token auth for patient sync
+- `FRAPPE_WEBHOOK_SECRET` — Shared secret for ERPNext webhook verification
 
 ---
 
@@ -537,6 +589,30 @@ users (
   auth_provider VARCHAR(50),       -- 'local' | 'google' | 'frappe'
   password_reset_token VARCHAR(255),
   password_reset_expires TIMESTAMP
+)
+```
+
+### Patients Table
+```sql
+patients (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  medical_record_number VARCHAR(50),
+  date_of_birth DATE,
+  gender VARCHAR(10),
+  blood_type VARCHAR(5),
+  allergies TEXT[],
+  -- Sync fields (added Feb 2026):
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  abha_id VARCHAR(50) UNIQUE,       -- ABHA sync key
+  abha_address VARCHAR(100),
+  phone VARCHAR(20),
+  email VARCHAR(255),
+  status VARCHAR(20),               -- LINKED/NOT_LINKED/ACTIVE/INACTIVE
+  erpnext_patient_id VARCHAR(100),  -- ERPNext Patient name
+  sync_source VARCHAR(20),          -- 'caladrius' or 'erpnext'
+  last_synced_at TIMESTAMPTZ
 )
 ```
 
@@ -578,6 +654,11 @@ user_pipeline_configs (user_id, pipeline_type_id, model_id, temperature, ...)
 ### Health
 - `GET /api/health` - BFF health
 - `GET /api/public/health` - Backend services health
+
+### Sync
+- `POST /api/sync/patients/:patientId/to-erpnext` — Trigger patient sync to ERPNext (requires: JWT auth)
+- `POST /api/sync/webhook/erpnext/patient` — ERPNext webhook receiver (X-Webhook-Secret auth)
+- `GET /api/sync/status/:patientId` — Check patient sync status (requires: JWT auth)
 
 ### Roles (RBAC)
 - `GET /api/roles` - List all roles (requires: roles:read)

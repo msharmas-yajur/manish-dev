@@ -10,6 +10,7 @@ import { healthRouter } from './routes/health';
 import { authRouter } from './routes/auth';
 import { rolesRouter } from './routes/roles';
 import { proxyRouter } from './routes/proxy';
+import { syncRouter } from './routes/sync';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { corsMiddleware } from './middleware/cors';
@@ -60,6 +61,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/roles', rolesRouter);
 app.use('/api', proxyRouter); // Proxy must come before generic rolesRouter to handle /api/backend/* and /api/llm/*
 app.use('/api', rolesRouter); // For /api/users/:userId/roles paths - placed after proxyRouter
+app.use('/api/sync', syncRouter);
 
 // Error handling
 app.use(errorHandler);

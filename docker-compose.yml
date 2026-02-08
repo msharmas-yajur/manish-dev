@@ -121,6 +121,9 @@ services:
       FRAPPE_URL: ${FRAPPE_URL:-http://localhost:8090}
       FRAPPE_INTERNAL_URL: ${FRAPPE_INTERNAL_URL:-http://manish-frappe-frontend:8080}
       FRAPPE_CALLBACK_URL: ${FRAPPE_CALLBACK_URL:-http://localhost:3001/api/auth/frappe/callback}
+      FRAPPE_API_KEY: ${FRAPPE_API_KEY:-}
+      FRAPPE_API_SECRET: ${FRAPPE_API_SECRET:-}
+      FRAPPE_WEBHOOK_SECRET: ${FRAPPE_WEBHOOK_SECRET:-dev-webhook-secret}
       # Security
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       SESSION_SECRET: ${SESSION_SECRET:-session-secret-change-in-production}

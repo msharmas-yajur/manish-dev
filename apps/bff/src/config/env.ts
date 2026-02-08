@@ -45,6 +45,9 @@ export const config = {
     url: process.env.FRAPPE_URL || 'http://localhost:8090',
     internalUrl: process.env.FRAPPE_INTERNAL_URL || 'http://frappe-frontend:8080',
     callbackUrl: process.env.FRAPPE_CALLBACK_URL || 'http://localhost:3001/api/auth/frappe/callback',
+    apiKey: process.env.FRAPPE_API_KEY || '',
+    apiSecret: process.env.FRAPPE_API_SECRET || '',
+    webhookSecret: process.env.FRAPPE_WEBHOOK_SECRET || 'dev-webhook-secret',
   },
 
   // Session
