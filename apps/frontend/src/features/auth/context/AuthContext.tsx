@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { User, AuthResponse } from '@manish-dev/shared-types';
 import { authService } from '../services/authService';
 
@@ -21,6 +21,7 @@ export interface AuthContextState {
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (email: string, password: string, name: string) => Promise<AuthResponse>;
   logout: () => Promise<void>;
+  setAuth: (token: string, user: AuthUser) => void;
   clearError: () => void;
 }
 
@@ -53,8 +54,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check if user is authenticated
   const isAuthenticated = useMemo(() => !!user && !!token, [user, token]);
 
-  // Persist auth state to localStorage
+  // Track whether persistence effects have run at least once.
+  // On the /auth/callback page, AuthCallback (child) writes the token to localStorage
+  // before AuthProvider's effects run. Without this guard, the persistence effect
+  // fires with token=null and removes the token AuthCallback just stored.
+  const hasMounted = useRef(false);
+
+  // Persist auth state to localStorage (write-only; removals happen in logout/verifyAuth)
   useEffect(() => {
+    if (!hasMounted.current) return;
     if (token) {
       localStorage.setItem(TOKEN_STORAGE_KEY, token);
     } else {
@@ -63,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   useEffect(() => {
+    if (!hasMounted.current) return;
     if (user) {
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
     } else {
@@ -72,6 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Verify token on mount
   useEffect(() => {
+    hasMounted.current = true;
+
     const verifyAuth = async () => {
       if (token) {
         setIsLoading(true);
@@ -80,14 +91,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (currentUser) {
             setUser({ ...currentUser, token });
           } else {
-            // Token is invalid, clear state
+            // Token is invalid, clear both state and localStorage
             setUser(null);
             setToken(null);
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+            localStorage.removeItem(USER_STORAGE_KEY);
           }
         } catch {
-          // Token verification failed
+          // Token verification failed, clear both state and localStorage
           setUser(null);
           setToken(null);
+          localStorage.removeItem(TOKEN_STORAGE_KEY);
+          localStorage.removeItem(USER_STORAGE_KEY);
         } finally {
           setIsLoading(false);
         }
@@ -136,6 +151,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Set auth state from OAuth callback (token + user from external source)
+  const setAuth = useCallback((newToken: string, newUser: AuthUser) => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
+    setToken(newToken);
+    setUser({ ...newUser, token: newToken });
+  }, []);
+
   const logout = useCallback(async () => {
     setIsLoading(true);
 
@@ -146,6 +169,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(null);
       setError(null);
       setIsLoading(false);
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
     }
   }, []);
 
@@ -162,8 +187,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     logout,
+    setAuth,
     clearError,
-  }), [user, token, isLoading, isAuthenticated, error, login, register, logout, clearError]);
+  }), [user, token, isLoading, isAuthenticated, error, login, register, logout, setAuth, clearError]);
 
   return (
     <AuthContext.Provider value={value}>

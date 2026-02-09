@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, CircularProgress, Typography, Alert } from '@mui/material';
-
-const TOKEN_STORAGE_KEY = 'caladrius_auth_token';
-const USER_STORAGE_KEY = 'caladrius_auth_user';
+import { useAuthContext } from '@features/auth';
 
 export function AuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const { setAuth } = useAuthContext();
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    // Prevent double-execution in React 18 StrictMode
+    if (hasRun.current) return;
+    hasRun.current = true;
+
     const token = searchParams.get('token');
     const errorParam = searchParams.get('error');
 
@@ -21,10 +25,7 @@ export function AuthCallback() {
     }
 
     if (token) {
-      // Store the token with correct key
-      localStorage.setItem(TOKEN_STORAGE_KEY, token);
-
-      // Fetch user info
+      // Fetch user info using the token from the URL
       fetch('/api/auth/me', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -33,28 +34,24 @@ export function AuthCallback() {
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.data) {
-            // Store user with correct key
-            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.data));
-            // Force page reload to reinitialize AuthContext with new token
-            window.location.href = '/patients';
+            // Update AuthContext state + localStorage atomically
+            setAuth(token, data.data);
+            // Navigate via React Router (no full page reload needed)
+            navigate('/patients', { replace: true });
           } else {
             setError('Failed to fetch user information.');
-            // Clear invalid token
-            localStorage.removeItem(TOKEN_STORAGE_KEY);
             setTimeout(() => navigate('/login'), 3000);
           }
         })
         .catch(() => {
           setError('Failed to complete authentication.');
-          // Clear invalid token
-          localStorage.removeItem(TOKEN_STORAGE_KEY);
           setTimeout(() => navigate('/login'), 3000);
         });
     } else {
       setError('No authentication token received.');
       setTimeout(() => navigate('/login'), 3000);
     }
-  }, [navigate, searchParams]);
+  }, [navigate, searchParams, setAuth]);
 
   return (
     <Box

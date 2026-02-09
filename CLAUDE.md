@@ -8,19 +8,16 @@
 **Code Review:** `/docs/CODE_REVIEW_REPORT.md`
 
 **Completed (Feb 8, 2026):**
-- ✅ Frappe/ERPNext v16 provisioned (8-container stack, Healthcare module)
-- ✅ Frappe OAuth2 login integration (Authorization Code grant)
-- ✅ Bidirectional Patient Sync (Caladrius <-> ERPNext) — all 6 phases
-- ✅ Frappe custom app `caladrius_integration` installed
-- ✅ 4 custom fields on ERPNext Patient DocType
-- ✅ API user + token auth for sync
-- ✅ End-to-end sync verified (patient created in both systems, loop prevention working)
+- Frappe/ERPNext v16 provisioned (8-container stack, Healthcare module)
+- Frappe OAuth2 login integration (Authorization Code grant)
+- Bidirectional Patient Sync (Caladrius <-> ERPNext) — all 6 phases
+- Frappe custom app `caladrius_integration` installed
+- End-to-end sync verified (loop prevention working)
 
 **Completed (Jan 28, 2026):**
-- ✅ Phase 1-3: Frontend layout (Foundation, Core Components, Assembly)
-- ✅ Patient List Feature (A-020, A-021)
-- ✅ Settings Page Feature (A-024)
-- ✅ Code Review - 8.5/10 score, 2 major issues fixed
+- Phase 1-3: Frontend layout (Foundation, Core Components, Assembly)
+- Patient List Feature (A-020, A-021), Settings Page (A-024)
+- Code Review - 8.5/10 score, 2 major issues fixed
 
 **Next Tasks to Pick Up:**
 1. FHIR Patient India IG alignment (patient data model)
@@ -32,29 +29,18 @@
 ---
 
 ## Project Overview
+
 Healthcare application with multi-container microservices architecture designed for clinical workflows, patient management, and AI-assisted medical decision support.
 
-## Tech Stack
-- **Frontend**: React 19 + Vite + TypeScript (Material Design 3, desktop-only)
-- **BFF**: Node.js + Express + TypeScript (port 3001)
-- **Backend**: Python + FastAPI (port 8000)
-- **Databases**: PostgreSQL 16, MongoDB 7, Redis 7
-- **AI/ML**: Multi-provider LLM service (OpenAI, Anthropic, Ollama)
-- **Healthcare**: Snowstorm (SNOMED CT), LiveKit (telehealth)
-- **Auth**: JWT + Google OAuth 2.0 + Frappe/ERPNext OAuth 2.0 + RBAC
-- **ERP**: ERPNext v16 + Healthcare module (Frappe, port 8090)
+**Tech Stack**: React 19 + Vite | Node.js BFF | Python FastAPI | PostgreSQL 16 | MongoDB 7 | Redis 7 | ERPNext v16
 
-## Architecture
+**Architecture**:
 ```
 Frontend (8081) → Nginx → BFF (3001) → Backend (8000) → Databases
                               ↓
                         Copilot Service (8004) → LLM Service (8003) → Ollama/OpenAI/Anthropic
                               ↓
                         Snowstorm (8085) - SNOMED CT
-
-Bidirectional Patient Sync:
-  BFF (3001) ←→ ERPNext/Frappe (8090) via REST API + Webhooks
-  Sync Key: ABHA ID | Loop Prevention: custom_caladrius_id flag
 ```
 
 ## Running Services
@@ -67,1012 +53,97 @@ docker compose build --no-cache <svc>   # Rebuild service
 
 ---
 
-## Current Sprint
+## Context Sub-Files
 
-> **Last Updated:** February 8, 2026
-> **Focus:** ERPNext Integration & Patient Sync
+Detailed documentation is split into topic-based files under `docs/context/`:
 
-### Active Work
-Bidirectional patient sync between Caladrius and ERPNext completed. Next: FHIR Patient India IG alignment.
+| File | Contents |
+|------|----------|
+| [`ARCHITECTURE.md`](docs/context/ARCHITECTURE.md) | Tech stack, system architecture, project structure, port map |
+| [`AUTH_AND_RBAC.md`](docs/context/AUTH_AND_RBAC.md) | JWT + OAuth decisions, Frappe OAuth flow, RBAC roles/permissions, password reset |
+| [`ERPNEXT_INTEGRATION.md`](docs/context/ERPNEXT_INTEGRATION.md) | Frappe/ERPNext setup, containers, volumes, gotchas, bidirectional patient sync, env vars |
+| [`DATABASE_SCHEMA.md`](docs/context/DATABASE_SCHEMA.md) | All table schemas — users, patients, RBAC, LLM config, copilot audit |
+| [`API_REFERENCE.md`](docs/context/API_REFERENCE.md) | All API endpoints — auth, health, sync, RBAC |
+| [`COPILOTKIT.md`](docs/context/COPILOTKIT.md) | CopilotKit architecture decisions, agent capabilities, implementation phases |
+| [`FRONTEND_DESIGN.md`](docs/context/FRONTEND_DESIGN.md) | Material Design 3 guidelines, layout dimensions, screen design references |
+| [`COMPANY_WEBSITE.md`](docs/context/COMPANY_WEBSITE.md) | Website planning, design language, WordPress + Next.js architecture, MVP pages |
+| [`CMS_COMPARISON.md`](docs/context/CMS_COMPARISON.md) | Evaluation of 7 CMS options (WordPress chosen) |
+| [`TESTING.md`](docs/context/TESTING.md) | Health check scripts, test users, RBAC testing commands |
+| [`DEV_PRINCIPLES.md`](docs/context/DEV_PRINCIPLES.md) | Backward compatibility rules, LLM provider strategy, env variables |
+| [`VELOCITY_METRICS.md`](docs/context/VELOCITY_METRICS.md) | Development speed tracking, Claude Code vs traditional comparison |
 
-### Task Tracking
-**Master Task File:** `/docs/PROJECT_TASKS.md`
-
-| Phase | Tasks | Status |
-|-------|-------|--------|
-| Frontend Layout | A-001 to A-012 | ✅ Complete |
-| Frontend Integration | A-013, A-014 | 🔲 Ready |
-| Patient List Feature | A-020, A-021 | ✅ Complete |
-| Settings Feature | A-024 | ✅ Complete |
-| ERPNext Provisioning | Frappe v16 + Healthcare | ✅ Complete |
-| Frappe OAuth2 Login | BFF OAuth integration | ✅ Complete |
-| Patient Sync (Phases 1-6) | DB + FastAPI + BFF + Frappe app | ✅ Complete |
-| FHIR Patient India IG | Patient model alignment | 🔲 Next |
-
-### Design References
-Screenshots in `/docs/ScreenDesigns/`:
-- `Patient List.jpeg` - Main layout, drawers collapsed
-- `Patient List With Left Navbar Drawer.jpeg` - Left drawer expanded
-- `Patient List With CoPilotKit.jpeg` - Right panel with AI chat
-- `Patient List - Create New Patients Option.jpeg` - Create patient modal
-
-### Key Layout Dimensions
-| Component | Width | Behavior |
-|-----------|-------|----------|
-| Left Rail | 56px | Always visible, icons only |
-| Left Drawer | +180px | Expands on toggle |
-| Right Rail | 56px | Always visible, tool icons |
-| Right Panel | +400px | Expands when tool selected |
-| AppBar | 64px height | Fixed top |
-
-### Quick Resume Command
-```
-"Continue from PROJECT_TASKS.md - implementing application framework layout"
-```
+**Other docs:**
+- `/docs/PROJECT_TASKS.md` — Master task tracking file
+- `/docs/CODE_REVIEW_REPORT.md` — Code review findings
+- `/docs/DATA_LAKEHOUSE_IMPLEMENTATION.md` — Data lakehouse design
 
 ---
 
-## Project Structure
-```
-apps/
-├── frontend/         # React app (Vite + TypeScript) - Healthcare App
-├── website/          # Next.js + GSAP - Company Website
-├── bff/              # Node.js API gateway
-│   └── src/services/ # frappeClient.ts, patientSync.ts (ERPNext sync)
-│   └── src/routes/   # sync.ts (sync endpoints)
-├── backend/          # Python FastAPI backend
-├── llm-service/      # Multi-provider LLM router
-├── workers/          # Celery workers
-└── copilot-service/  # CopilotKit runtime (Node.js, port 8004) - Planned
-infrastructure/
-└── frappe/           # Frappe/ERPNext MariaDB config (utf8mb4)
-packages/
-├── shared-types/     # Shared TypeScript types
-├── shared-utils/     # Shared utilities
-└── ui-components/    # Shared UI components
-infrastructure/
-├── postgres/         # PostgreSQL init scripts
-├── mongo/            # MongoDB init scripts
-└── livekit/          # LiveKit config
-```
+## Quick Reference
 
-## Design Guidelines
-- Material Design 3 for web
-- Desktop/laptop only (min-width: 1024px)
-- No mobile responsiveness required
-- Healthcare-focused UI/UX
+### Port Map
+| Service | Port | Service | Port |
+|---------|------|---------|------|
+| Frontend | 8081 | LLM Service | 8003 |
+| BFF | 3001 | Copilot Service | 8004 |
+| Backend | 8000 | Snowstorm | 8085 |
+| PostgreSQL | 5432 | ERPNext | 8090 |
+| MongoDB | 27018 | WordPress | 8082 |
+| Redis | 6379 | Website (Next.js) | 8084 |
+| Ollama | 11434 | LiveKit | 7880 |
+| MariaDB | 3307 | Frappe MariaDB | 3308 |
 
-## Development Principles
+### Design Guidelines
+- Material Design 3 for web, desktop-only (min-width: 1024px)
+- See [`FRONTEND_DESIGN.md`](docs/context/FRONTEND_DESIGN.md) for layout dimensions
 
-### Backward Compatibility & Non-Breaking Changes
-**Core Principle**: Every new feature or service must be implemented without breaking existing functionality.
-
-**Implementation Guidelines**:
-1. **Service Isolation**: New services (e.g., CopilotKit) are separate microservices that don't modify existing service code
-2. **Additive Changes Only**: Database migrations add new tables/columns without altering existing schema
-3. **Regression Testing**: Test existing features before and after implementing new ones
-4. **Health Checks**: All services maintain independent health checks - new service failures shouldn't cascade
-5. **Incremental Integration**: New features integrate through existing patterns (BFF proxy, shared types, JWT auth)
-6. **API Versioning**: Consider versioning for breaking API changes (future consideration)
-
-**Testing Approach**:
-- **Before Implementation**: Verify all existing services are healthy and functional
-- **During Implementation**: Run integration tests on existing endpoints after each phase
-- **After Implementation**: Full regression test suite covering auth, RBAC, and all existing APIs
-- **Continuous Monitoring**: Health check endpoints for all services in docker-compose
-
-**Example - CopilotKit Integration**:
-- ✅ New service on separate port (8004) - doesn't touch BFF/Backend code
-- ✅ New database tables only (`copilot_action_audit`, `copilot_conversations`) - doesn't alter existing schema
-- ✅ Reuses existing patterns (JWT auth, RBAC service, PostgreSQL pool) - proven and tested
-- ✅ Optional integration (frontend can work without copilot service running)
-- ✅ BFF proxy is additive (`/api/copilot` route) - doesn't modify existing routes
-- ✅ Independent health checks - copilot service failure doesn't affect auth or patient data APIs
-
-**Red Flags to Avoid**:
-- ❌ Modifying existing database tables (use migrations carefully)
-- ❌ Changing existing API response formats without versioning
-- ❌ Removing or renaming existing environment variables
-- ❌ Altering shared middleware behavior without testing all consumers
-- ❌ Tightly coupling new services to existing ones (use loose coupling via APIs)
-
-## Ports
-| Service    | Port  |
-|------------|-------|
-| Frontend   | 8081  |
-| BFF        | 3001  |
-| Backend    | 8000  |
-| Copilot Service | 8004 |
-| PostgreSQL | 5432  |
-| MongoDB    | 27018 |
-| Redis      | 6379  |
-| LLM Service| 8003  |
-| Ollama     | 11434 |
-| LiveKit    | 7880  |
-| Snowstorm  | 8085  |
-| WordPress  | 8082  |
-| MariaDB    | 3307  |
-| Website (Next.js) | 8084 |
-| ERPNext (Frappe) | 8090 |
-| Frappe MariaDB | 3308 |
-
----
-
-## Development Decisions
-
-### Authentication & Authorization
-
-#### Decision: JWT + Multi-Provider OAuth
-- **Date**: Jan 2026 (updated Feb 2026)
-- **Context**: Need secure authentication for healthcare app with optional ERPNext SSO
-- **Choice**: JWT tokens with 24h expiry + Google OAuth 2.0 + Frappe/ERPNext OAuth 2.0
-- **Rationale**:
-  - JWT for stateless auth, works across microservices
-  - Google OAuth for enterprise SSO, HIPAA-friendly
-  - Frappe OAuth for ERPNext SSO (loosely coupled, optional)
-  - Session-less design (no server-side sessions)
-
-#### Decision: Frappe/ERPNext OAuth Integration (Loose Coupling)
-- **Date**: Feb 2026
-- **Context**: Use ERPNext's user base for authentication without tight coupling
-- **Choice**: Frappe as OAuth2 provider via Authorization Code grant
-- **Rationale**:
-  - Follows same pattern as Google OAuth (additive, no existing code modified)
-  - App works without Frappe running (button hidden when provider unavailable)
-  - Account linking: existing email users auto-linked on first Frappe login
-  - Manual OAuth2 flow (no passport strategy needed)
-- **Endpoints Used**:
-  - Authorize: `GET /api/method/frappe.integrations.oauth2.authorize`
-  - Token: `POST /api/method/frappe.integrations.oauth2.get_token`
-  - Profile: `GET /api/method/frappe.integrations.oauth2.openid_profile`
-- **Setup**: Create OAuth Client in Frappe admin, set env vars `FRAPPE_OAUTH_CLIENT_ID` and `FRAPPE_OAUTH_CLIENT_SECRET`
-
-#### Decision: Role-Based Access Control (RBAC)
-- **Date**: Jan 2026
-- **Context**: Need authorization for different user types (physicians, nurses, patients)
-- **Choice**: RBAC over ABAC (Attribute-Based Access Control)
-- **Rationale**:
-  - Simpler to implement and audit
-  - Sufficient for initial healthcare workflows
-  - Can add ABAC features incrementally (patient-provider relationships)
-
-### RBAC Roles
-| Role | Description | Permission Count |
-|------|-------------|------------------|
-| system_admin | Full access | 39 (all) |
-| physician | Clinical access | 18 |
-| nurse | Patient care | 11 |
-| medical_assistant | Limited clinical | 8 |
-| patient | Own data only | 8 |
-| billing_staff | Financial | 7 |
-| receptionist | Scheduling | 7 |
-| user | Default (minimal) | 2 |
-
-### Permission Format
-- Pattern: `resource:action` (e.g., `patients:read`, `appointments:create`)
-- Own data: `own_resource:action` for patient self-service
-
-### LLM Provider Strategy
-
-#### Decision: User-Defined API Keys
-- **Date**: Jan 2026
-- **Context**: Need to support multiple LLM providers
-- **Choice**: Users configure their own API keys (encrypted with AES-256)
-- **Rationale**:
-  - No central API key management costs
-  - Users control their own usage/billing
-  - Supports OpenAI, Anthropic, Ollama, Google AI, Azure OpenAI
-
-#### Decision: Multi-Provider Router
-- **Context**: Different models for different tasks
-- **Choice**: Unified LLM service that routes to providers
-- **Rationale**:
-  - Single API endpoint for frontend
-  - Model selection per pipeline type (chat, summarization, coding)
-  - Easy to add new providers
-
-### Bidirectional Patient Sync (Caladrius <-> ERPNext)
-
-#### Decision: BFF as Sole Integration Gateway
-- **Date**: Feb 2026
-- **Context**: Sync Patient entities between Caladrius (clinical/ABDM) and ERPNext (CRM/billing)
-- **Choice**: BFF as sole integration gateway, ABHA ID as sync key, Frappe REST API + webhooks
-- **Rationale**:
-  - Loose coupling — each system works independently
-  - BFF centralizes all sync logic (no direct backend-to-Frappe calls)
-  - Async sync via frappe.enqueue — non-blocking
-  - Infinite loop prevention via custom_caladrius_id flag + doc.flags
-- **Frappe Custom App**: caladrius_integration (hooks.py + sync/patient.py)
-- **Auth**: Dedicated API user with token-based auth (not OAuth)
-
-### Password Reset Flow
-
-#### Decision: Google-Style Reset
-- **Date**: Jan 2026
-- **Choice**: Email link with secure token
-- **Implementation**:
-  - SHA-256 hashed tokens stored in DB
-  - 1-hour expiry
-  - Same response for existing/non-existing emails (prevents enumeration)
-- **Dev Mode**: Reset links logged to console (no email service yet)
-
-### Frontend Architecture
-
-#### Decision: Vite over Create React App
-- **Rationale**: Faster builds, better ESM support, smaller bundle
-
-#### Decision: Desktop-Only
-- **Rationale**: Healthcare professionals use desktop/laptop workstations
-- **Implementation**: min-width: 1024px, no responsive breakpoints
-
-### CopilotKit Integration
-
-#### Decision: Separate Microservice Architecture
-- **Date**: Jan 2026
-- **Context**: Need AI agent capabilities for medical coding, patient data retrieval, and clinical documentation
-- **Choice**: Standalone Node.js service on port 8004 (similar to LLM Service pattern)
-- **Rationale**:
-  - Service isolation (independent scaling and deployment)
-  - Follows existing microservice pattern
-  - Dedicated health checks and monitoring
-  - Clear separation of concerns from BFF
-
-#### Decision: Node.js + Express + TypeScript Framework
-- **Context**: Choose between Node.js and Python for copilot service
-- **Choice**: Node.js + Express + TypeScript
-- **Rationale**:
-  - Native CopilotKit SDK support (`@copilotkit/runtime` is Node.js-first)
-  - Consistency with BFF architecture (reuse auth/RBAC patterns)
-  - TypeScript integration with existing `@manish-dev/shared-types`
-  - Team expertise in Node.js/Express stack
-  - Better for I/O-bound agent tasks
-- **Trade-off**: Python/FastAPI would require custom CopilotKit implementation
-
-#### Decision: User Permission Inheritance Security Model
-- **Context**: How should agents respect user permissions and RBAC?
-- **Choice**: Agents inherit RBAC permissions from authenticated user
-- **Implementation**:
-  - JWT validation on all copilot requests
-  - User context (id, email, roles, permissions) passed to all agent actions
-  - Every action validates required permissions before execution
-  - Patients can only access own data (ownership validation)
-  - Complete audit trail to PostgreSQL (`copilot_action_audit` table)
-- **Rationale**:
-  - Most secure for healthcare data (HIPAA compliance)
-  - Agents can't bypass user permissions
-  - Clear audit trail for compliance
-  - Prevents privilege escalation
-
-#### Decision: Route Through Existing LLM Service
-- **Context**: How should CopilotKit access LLM providers?
-- **Choice**: Route all LLM requests through existing LLM Service (port 8003)
-- **Rationale**:
-  - Centralized LLM provider management
-  - Respects user-specific model configurations
-  - Consistent token tracking and cost monitoring
-  - No duplicate provider credential management
-  - Reuses existing OpenAI/Anthropic/Ollama infrastructure
-- **Alternative Rejected**: Direct OpenAI/Anthropic API calls (would bypass user configs)
-
-### CopilotKit Agent Capabilities
-
-| Agent Action | Purpose | Required Permissions | Data Source | Status |
-|--------------|---------|---------------------|-------------|--------|
-| `searchMedicalCodes` | SNOMED CT code lookup | `llm:use`, `records:read` | Snowstorm (8085) | ✅ Complete (Phase 2) |
-| `getPatientData` | Patient info + medical records | `patients:read`, `records:read` | PostgreSQL | 🚧 Phase 3 |
-| `generateClinicalNote` | Generate SOAP/Progress notes | `llm:use`, `records:create` | LLM Service (8003) | 📋 Phase 4 |
-
-**Special Rules:**
-- `getPatientData`: Patients can only access own data (user_id validation)
-- `generateClinicalNote`: Restricted to clinical staff only (physician, nurse, medical_assistant)
-
-**Implementation Details (Phase 1 & 2):**
-
-#### Phase 1: Service Foundation
-- **Implementation Date**: January 26, 2026
-- **Development Time**: 5 minutes (traditional: ~16 hours)
-- **Agent Collaboration**: 5 agents in parallel
-- **Files Created**: 2,406 files (complete service structure)
-- **Key Achievements**:
-  - Express server with health checks
-  - JWT authentication middleware (matches BFF)
-  - PostgreSQL + Redis connection pooling
-  - Docker multi-stage build
-  - Complete TypeScript configuration
-
-#### Phase 2: Medical Coding Agent
-- **Implementation Date**: January 26, 2026
-- **Development Time**: 5 minutes (traditional: ~20 hours)
-- **Agent Collaboration**: 6 agents in parallel
-- **Code Written**: 1,285 lines
-- **Key Achievements**:
-  - RBAC service (16 functions, Redis caching, 5-min TTL)
-  - Snowstorm HTTP client (SNOMED CT integration)
-  - Audit logging (PostgreSQL with JSONB, non-blocking)
-  - `searchMedicalCodes` action with full RBAC enforcement
-  - Database migration (copilot_action_audit table + indexes)
-  - Complete TypeScript type definitions
-
-**Database Schema (Phase 2):**
-```sql
-CREATE TABLE copilot_action_audit (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES users(id) CASCADE,
-    action_name VARCHAR(100),
-    parameters JSONB,
-    result JSONB,
-    error TEXT,
-    permissions_checked VARCHAR(255)[],
-    success BOOLEAN,
-    execution_time_ms INTEGER,
-    created_at TIMESTAMP DEFAULT NOW()
-);
--- Indexes: user_id, action_name, created_at
-```
+### Sprint Status
+| Phase | Status |
+|-------|--------|
+| Frontend Layout (A-001 to A-012) | Done |
+| Frontend Integration (A-013, A-014) | Ready |
+| Patient List (A-020, A-021) | Done |
+| Settings (A-024) | Done |
+| ERPNext Provisioning | Done |
+| Frappe OAuth2 Login | Done |
+| Patient Sync (Phases 1-6) | Done |
+| FHIR Patient India IG | Next |
+| CopilotKit Phases 3-6 | Pending |
 
 ---
 
 ## Implementation Progress
 
 ### Completed
-- [x] Phase 1: Core Infrastructure (PostgreSQL, MongoDB, Redis)
-- [x] Phase 2: Backend Services (BFF, Python Backend)
-- [x] Phase 3a: LLM Service (multi-provider routing)
-- [x] Phase 3b: Celery Workers (embeddings, summarization, medical coding)
-- [x] Authentication: Login, Register, Google OAuth, Frappe OAuth, Password Reset
-- [x] RBAC: Database schema, roles, permissions, role-permission mappings
-- [x] RBAC: BFF service layer with Redis caching (5-min TTL)
-- [x] RBAC: Middleware (requirePermission, requireRole, requireAdmin, requireOwnership)
-- [x] RBAC: Role management API endpoints
-- [x] RBAC: Auth returns roles and permissions on login/register
-- [x] Bidirectional Patient Sync: Caladrius <-> ERPNext (all 6 phases)
-
-### In Progress
-- [ ] Phase 4c: CopilotKit - Patient Data Agent (Phase 3)
-- [ ] Phase 4d: CopilotKit - Clinical Documentation Agent (Phase 4)
-- [ ] Phase 4e: CopilotKit - Frontend Integration (Phase 5)
-- [ ] Phase 4f: CopilotKit - Testing & Documentation (Phase 6)
-
-### Completed Recently
-- [x] **Phase 4a: CopilotKit Service Foundation (Phase 1)** - Jan 26, 2026
-  - Created copilot-service microservice on port 8004
-  - Express + TypeScript + CopilotKit SDK
-  - Auth middleware (JWT validation)
-  - Database connections (PostgreSQL + Redis)
-  - Health check endpoint
-  - Docker containerization
-  - Completed in 5 minutes via parallel agents
-
-- [x] **Phase 4b: CopilotKit Medical Coding Agent (Phase 2)** - Jan 26, 2026
-  - RBAC service with permission checking (16 functions, 369 lines)
-  - Snowstorm HTTP client for SNOMED CT integration
-  - Audit logging service (PostgreSQL + JSONB)
-  - `searchMedicalCodes` agent action
-  - Database migration (copilot_action_audit table)
-  - TypeScript types for medical coding
-  - Completed in 5 minutes via 6 parallel agents
-
-- [x] **Phase 6: Frappe/ERPNext v16 Integration (Provisioned)** - Feb 8, 2026
-  - Added 8-container ERPNext stack (frappe-db, configurator, backend, frontend, websocket, 2 queue workers, scheduler)
-  - Dedicated MariaDB 10.6 on port 3308 with utf8mb4 charset
-  - Reuses existing Redis (DB slots 1-3 for cache/queue/socketio)
-  - ERPNext UI at port 8090
-  - Site created: `erpnext.localhost` (admin: `Administrator` / `admin123456`)
-  - Installed apps: Frappe 16.5.0, ERPNext 16.4.1, Healthcare 16.0.3 (version-16 branch)
-  - Shared volumes (`frappe_apps`, `frappe_env`) across all containers for runtime app installs
-  - Fixed: gunicorn full path, `FRAPPE_SITE_NAME_HEADER`, health check Host header
-
-- [x] **Frappe OAuth2 Login Integration** - Feb 8, 2026
-  - Frappe as OAuth2 provider via Authorization Code grant
-  - BFF routes: `/api/auth/frappe`, `/api/auth/frappe/callback`
-  - Account linking: existing email users auto-linked on first Frappe login
-  - OAuth Client scopes must be space-separated (Frappe quirk)
-
-- [x] **Bidirectional Patient Sync (Caladrius <-> ERPNext)** - Feb 8, 2026
-  - **Phase 1**: PostgreSQL schema migration — 10 new columns on `patients` table + 3 indexes
-  - **Phase 2**: FastAPI model updates — PatientCreate/PatientResponse models, 2 new lookup endpoints
-  - **Phase 3**: BFF sync service — `frappeClient.ts` (Frappe REST API client), `patientSync.ts` (sync orchestration), `sync.ts` (3 API endpoints)
-  - **Phase 4**: Frappe custom app `caladrius_integration` — hooks.py (doc_events for Patient after_insert/on_update), sync/patient.py (webhook dispatch, Customer auto-creation)
-  - **Phase 5**: ERPNext custom fields — `custom_abha_id`, `custom_abha_address`, `custom_caladrius_id`, `custom_aadhaar_last4` on Patient DocType
-  - **Phase 6**: API user `caladrius-sync@erpnext.localhost` with token auth, site config for BFF URL + webhook secret
-  - **Verified**: End-to-end sync tested — patient created in Caladrius synced to ERPNext, webhook fired back, loop prevention working, Customer auto-created for billing
-  - **Files created**: `frappeClient.ts` (226 lines), `patientSync.ts` (417 lines), `sync.ts` (144 lines)
-  - **Files modified**: `patients.py`, `env.ts`, `index.ts`, `docker-compose.yml`, `init.sql`
+- [x] Core Infrastructure (PostgreSQL, MongoDB, Redis)
+- [x] Backend Services (BFF, Python Backend)
+- [x] LLM Service (multi-provider routing)
+- [x] Celery Workers (embeddings, summarization, medical coding)
+- [x] Authentication (Login, Register, Google OAuth, Frappe OAuth, Password Reset)
+- [x] RBAC (schema, roles, permissions, middleware, API endpoints)
+- [x] CopilotKit Phase 1 (Service Foundation) & Phase 2 (Medical Coding Agent)
+- [x] Frappe/ERPNext v16 (8-container stack, Healthcare module)
+- [x] Bidirectional Patient Sync (all 6 phases)
 
 ### Pending
-- [ ] FHIR Patient India IG alignment (patient data model per ABDM/NHA spec)
-- [ ] Phase 4b: LiveKit telehealth integration
-- [ ] Phase 5: Frontend integration with all services
+- [ ] FHIR Patient India IG alignment
+- [ ] CopilotKit Phases 3-6 (Patient Data, Clinical Docs, Frontend, Testing)
+- [ ] LiveKit telehealth integration
+- [ ] Frontend integration with all services
 - [ ] Admin UI for role management
 - [ ] Email service for password reset
-- [ ] Apply RBAC middleware to protect existing routes (patients, appointments, etc.)
-- [ ] Company Website (CMS) - See Planning section below
+- [ ] RBAC middleware on existing routes
+- [ ] Company Website (CMS)
 
 ---
 
-## Frappe/ERPNext Integration
-
-### Architecture
-- **Image**: `frappe/erpnext:v16` (Frappe 16.5.0, ERPNext 16.4.1)
-- **Entry point**: http://localhost:8090
-- **Login**: `Administrator` / `admin123456`
-- **Database**: Dedicated MariaDB 10.6 (`manish-frappe-db`, port 3308)
-- **Redis**: Shared with app stack — DB 1 (cache), DB 2 (queue), DB 3 (socketio)
-- **Config**: `infrastructure/frappe/mariadb.cnf` — enforces utf8mb4 charset
-
-### Installed Apps
-| App | Version | Branch |
-|-----|---------|--------|
-| Frappe | 16.5.0 | — |
-| ERPNext | 16.4.1 | — |
-| Healthcare | 16.0.3 | version-16 |
-
-### Services
-| Container | Role |
-|-----------|------|
-| `manish-frappe-db` | MariaDB 10.6 (Frappe-dedicated) |
-| `manish-frappe-configurator` | One-time init (writes common_site_config.json) |
-| `manish-frappe-backend` | Gunicorn app server (internal) |
-| `manish-frappe-frontend` | Nginx reverse proxy (port 8090) |
-| `manish-frappe-websocket` | Socket.IO real-time updates |
-| `manish-frappe-queue-short` | Short/default background jobs |
-| `manish-frappe-queue-long` | Long-running background jobs |
-| `manish-frappe-scheduler` | Cron/scheduled tasks |
-
-### Shared Volumes
-All Frappe containers share these volumes so `bench get-app` installs are visible everywhere:
-- `frappe_sites` — `/home/frappe/frappe-bench/sites`
-- `frappe_logs` — `/home/frappe/frappe-bench/logs`
-- `frappe_apps` — `/home/frappe/frappe-bench/apps`
-- `frappe_env` — `/home/frappe/frappe-bench/env`
-
-### First-Time Setup (Already Completed)
-```bash
-# After docker compose up -d, wait for frappe-configurator to exit cleanly, then:
-
-# Create site
-docker exec manish-frappe-backend bench new-site erpnext.localhost \
-  --mariadb-root-password frappe_secret \
-  --admin-password admin123456
-
-# Set default site
-docker exec manish-frappe-backend bench use erpnext.localhost
-
-# Install ERPNext
-docker exec manish-frappe-backend bench --site erpnext.localhost install-app erpnext
-
-# Install Healthcare module (MUST use version-16 branch)
-docker exec manish-frappe-backend bench get-app healthcare --branch version-16
-docker exec manish-frappe-backend bench --site erpnext.localhost install-app healthcare
-
-# Enable scheduler
-docker exec manish-frappe-backend bench --site erpnext.localhost enable-scheduler
-```
-
-### Key Gotchas
-- **Gunicorn path**: Must use `/home/frappe/frappe-bench/env/bin/gunicorn` (not bare `gunicorn`) — it's not in PATH
-- **Site name header**: `FRAPPE_SITE_NAME_HEADER` must be `erpnext.localhost` (not `$$host`) for localhost access
-- **Health check**: Backend health check must include `-H "Host: erpnext.localhost"` in curl
-- **Healthcare branch**: `develop` branch is incompatible with ERPNext v16 — use `--branch version-16`
-- **"All Customer Groups" error**: Non-blocking during healthcare install — resolved during setup wizard
-
-### Patient Sync
-- **Direction**: Bidirectional (Caladrius <-> ERPNext)
-- **Sync Key**: ABHA ID (`abha_id` in PostgreSQL, `custom_abha_id` in ERPNext)
-- **Custom App**: `caladrius_integration` (hooks.py + sync/patient.py)
-- **Custom Fields on Patient DocType**: `custom_abha_id`, `custom_abha_address`, `custom_caladrius_id`, `custom_aadhaar_last4`
-- **API User**: `caladrius-sync@erpnext.localhost` (Healthcare Administrator + Physician + System Manager roles)
-- **Webhook**: ERPNext → BFF `POST /api/sync/webhook/erpnext/patient` (X-Webhook-Secret auth)
-- **Auto-creates** Customer record in ERPNext for billing (via `ensure_customer_for_patient` hook)
-- **Loop Prevention**: BFF sets `custom_caladrius_id` on ERPNext create → Frappe hook skips webhook if present
-
-### Environment Variables
-- `FRAPPE_DB_PASSWORD` — MariaDB root + app password (default: `frappe_secret`)
-- `FRAPPE_ADMIN_PASSWORD` — ERPNext admin UI password
-- `FRAPPE_SITE_NAME` — site name (default: `erpnext.localhost`)
-- `FRAPPE_API_KEY` / `FRAPPE_API_SECRET` — Frappe token auth for patient sync
-- `FRAPPE_WEBHOOK_SECRET` — Shared secret for ERPNext webhook verification
-
----
-
-## Database Schema Highlights
-
-### Users Table
-```sql
-users (
-  id UUID PRIMARY KEY,
-  email VARCHAR(255) UNIQUE,
-  password_hash VARCHAR(255),      -- NULL for OAuth-only
-  role VARCHAR(50) DEFAULT 'user', -- Legacy, use user_roles
-  google_id VARCHAR(255),          -- For Google OAuth
-  frappe_id VARCHAR(255),          -- For Frappe/ERPNext OAuth
-  auth_provider VARCHAR(50),       -- 'local' | 'google' | 'frappe'
-  password_reset_token VARCHAR(255),
-  password_reset_expires TIMESTAMP
-)
-```
-
-### Patients Table
-```sql
-patients (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id),
-  medical_record_number VARCHAR(50),
-  date_of_birth DATE,
-  gender VARCHAR(10),
-  blood_type VARCHAR(5),
-  allergies TEXT[],
-  -- Sync fields (added Feb 2026):
-  first_name VARCHAR(100),
-  last_name VARCHAR(100),
-  abha_id VARCHAR(50) UNIQUE,       -- ABHA sync key
-  abha_address VARCHAR(100),
-  phone VARCHAR(20),
-  email VARCHAR(255),
-  status VARCHAR(20),               -- LINKED/NOT_LINKED/ACTIVE/INACTIVE
-  erpnext_patient_id VARCHAR(100),  -- ERPNext Patient name
-  sync_source VARCHAR(20),          -- 'caladrius' or 'erpnext'
-  last_synced_at TIMESTAMPTZ
-)
-```
-
-### RBAC Tables
-```sql
-roles (id, name, display_name, description, is_system, is_active)
-permissions (id, name, display_name, resource, action)
-role_permissions (role_id, permission_id)
-user_roles (user_id, role_id, assigned_by, assigned_at)
-```
-
-### LLM Configuration
-```sql
-llm_providers (id, name, requires_api_key, base_url)
-user_llm_providers (user_id, provider_id, api_key_encrypted)
-llm_models (id, provider_id, name, context_window, costs)
-pipeline_types (id, name, default_model_id)
-user_pipeline_configs (user_id, pipeline_type_id, model_id, temperature, ...)
-```
-
----
-
-## API Endpoints
-
-### Auth
-- `POST /api/auth/register` - Create account
-- `POST /api/auth/login` - Login, returns JWT
-- `GET /api/auth/me` - Current user info
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/google` - Start Google OAuth
-- `GET /api/auth/google/callback` - OAuth callback
-- `GET /api/auth/frappe` - Start Frappe/ERPNext OAuth
-- `GET /api/auth/frappe/callback` - Frappe OAuth callback
-- `GET /api/auth/providers` - Available auth methods (local, google, frappe)
-- `POST /api/auth/forgot-password` - Request reset
-- `GET /api/auth/verify-reset-token/:token` - Verify token
-- `POST /api/auth/reset-password` - Reset with token
-
-### Health
-- `GET /api/health` - BFF health
-- `GET /api/public/health` - Backend services health
-
-### Sync
-- `POST /api/sync/patients/:patientId/to-erpnext` — Trigger patient sync to ERPNext (requires: JWT auth)
-- `POST /api/sync/webhook/erpnext/patient` — ERPNext webhook receiver (X-Webhook-Secret auth)
-- `GET /api/sync/status/:patientId` — Check patient sync status (requires: JWT auth)
-
-### Roles (RBAC)
-- `GET /api/roles` - List all roles (requires: roles:read)
-- `POST /api/roles` - Create role (requires: roles:create)
-- `GET /api/roles/:roleId` - Get role details with permissions
-- `PUT /api/roles/:roleId` - Update role
-- `DELETE /api/roles/:roleId` - Delete role (non-system only)
-- `GET /api/roles/:roleId/permissions` - Get role permissions
-- `PUT /api/roles/:roleId/permissions` - Update role permissions
-- `GET /api/roles/permissions/all` - List all permissions
-- `GET /api/users/:userId/roles` - Get user's roles
-- `GET /api/users/:userId/permissions` - Get user's permissions
-- `PUT /api/users/:userId/roles` - Assign roles to user (replaces all)
-- `POST /api/users/:userId/roles/:roleName` - Add role to user
-- `DELETE /api/users/:userId/roles/:roleName` - Remove role from user
-
----
-
-## Testing
-
-### Health Check Script
-
-Run before implementing new features to verify system health:
-```bash
-./scripts/health-check-all-services.sh
-```
-
-This script checks:
-- All Docker services running
-- Database connectivity (PostgreSQL, MongoDB, Redis)
-- HTTP health endpoints
-- Authentication flow (register, login, JWT)
-- RBAC endpoints
-- Database statistics and baseline performance
-
-See `scripts/README.md` for detailed documentation.
-
-### Test User
-```bash
-# Register
-curl -X POST http://localhost:8081/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test123456","firstName":"Test","lastName":"User"}'
-
-# Login
-curl -X POST http://localhost:8081/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test123456"}'
-```
-
-### Password Reset (Dev)
-```bash
-# Request reset
-curl -X POST http://localhost:8081/api/auth/forgot-password \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com"}'
-
-# Check BFF logs for reset link
-docker logs manish-bff 2>&1 | grep "Reset URL"
-```
-
-### RBAC Testing
-```bash
-# Login as admin to get token
-TOKEN=$(curl -s -X POST http://localhost:8081/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"sysadmin@example.com","password":"admin123456"}' | jq -r '.data.token')
-
-# List all roles
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/roles
-
-# Get user's roles and permissions
-curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/users/{userId}/roles
-
-# Assign physician role to user
-curl -X POST -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8081/api/users/{userId}/roles/physician
-
-# Clear Redis RBAC cache (if needed)
-docker exec manish-redis redis-cli -a change_me_in_production \
-  DEL "rbac:permissions:{userId}" "rbac:roles:{userId}"
-```
-
----
-
-## Environment Variables
-
-See `.env.example` for full list. Key variables:
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - Google OAuth
-- `FRAPPE_OAUTH_CLIENT_ID` / `FRAPPE_OAUTH_CLIENT_SECRET` - Frappe/ERPNext OAuth
-- `FRAPPE_URL` / `FRAPPE_INTERNAL_URL` / `FRAPPE_CALLBACK_URL` - Frappe OAuth URLs
-- `JWT_SECRET` - Token signing
-- `ENCRYPTION_KEY` - API key encryption (32 chars)
-- `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` - LLM providers
-
----
-
-## Company Website Planning
-
-### Overview
-Planning a company marketing website alongside the Caladrius application with:
-- Modern design (Apple + Anthropic/Claude.ai inspired)
-- GSAP animations for smooth interactions
-- Responsive design (unlike the desktop-only app)
-- CMS for content management
-- Make.com integration for automated feature announcements
-
-### Content Requirements
-- **Pages**: Home, About, Products/Features, Pricing, Contact, Careers
-- **Blog Posts**: Company news, industry insights
-- **Feature Announcements**: Automated from GitHub releases
-- **White Papers**: Downloadable PDFs with lead capture
-- **Case Studies**: Customer success stories
-- **Team Members**: Leadership and team profiles
-
-### Design Language
-**Apple-Inspired:**
-- Ultra-clean, minimalist layouts
-- Large hero sections with bold typography
-- Scroll-triggered animations
-- Parallax effects
-
-**Anthropic/Claude.ai-Inspired:**
-- Warm color palette (cream, terracotta, soft gradients)
-- Organic shapes and soft curves
-- Elegant serif + sans-serif typography
-- Trust-focused, conversational tone
-
-### Proposed Color Palette
-```css
---cream: #FAF9F6;
---warm-white: #FEFDFB;
---terracotta: #D4A574;
---deep-brown: #3D3129;
---soft-coral: #E8B4A0;
---sage: #A8B5A0;
-```
-
-### Typography
-- Headings: Fraunces (elegant serif)
-- Body: Inter (clean sans-serif)
-- Code: JetBrains Mono
-
-### CMS Options Under Consideration
-See "CMS Comparison" section for detailed analysis of:
-1. WordPress (Headless) + React/Next.js
-2. Strapi (Node.js headless CMS)
-3. Payload CMS (TypeScript-native)
-4. Sanity (Real-time collaborative)
-5. Directus (SQL-based headless)
-6. Ghost (Publishing-focused)
-7. Keystatic (Git-based, Astro-friendly)
-
-### Make.com Integration
-```
-GitHub Release → Make.com Scenario → CMS API → Website Rebuild
-```
-- Trigger: GitHub release webhook
-- Action: Create feature announcement post
-- Optional: Notify team via Slack/email
-
-### Decisions Made
-1. **CMS Choice**: WordPress (Headless) + React/Next.js frontend
-2. **Database**: MariaDB (standard WordPress setup)
-3. **Custom Fields**: Pods (free, all features included) - replaces ACF Pro
-4. **Hosting**: Same Docker stack as Caladrius application
-5. **Launch Priority**: MVP first (Home, About, Contact, then Features, Blog)
-6. **Domain Structure**: Subdomain separation
-   - `www.caladrius.com` → Company Website (Next.js + WordPress)
-   - `app.caladrius.com` → Healthcare Application (React)
-
-### Development Ports
-| Service | Port | URL |
-|---------|------|-----|
-| Website Frontend (Next.js) | 8084 | localhost:8084 |
-| WordPress Admin | 8082 | localhost:8082/wp-admin |
-| Healthcare App | 8081 | localhost:8081 |
-| BFF API | 3001 | localhost:3001 |
-
-### MVP Pages (Priority Order)
-| Priority | Page | Status |
-|----------|------|--------|
-| P0 | Home | Pending |
-| P0 | About | Pending |
-| P0 | Contact | Pending |
-| P1 | Features | Pending |
-| P1 | Blog | Pending |
-| P2 | Pricing | Pending |
-| P2 | Careers | Pending |
-| P2 | White Papers | Pending |
-
-### WordPress Plugin Stack
-| Plugin | Purpose | License |
-|--------|---------|---------|
-| **Pods** | Custom post types + custom fields + relationships | Free (GPL) |
-| **WP REST API** | Built-in, headless content delivery | Core |
-| **Yoast SEO** | SEO management | Free |
-| **WP GraphQL** | GraphQL API (optional, alternative to REST) | Free |
-| **Application Passwords** | API authentication for Make.com | Core (WP 5.6+) |
-
-### Final Architecture (Chosen)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Company Website Stack                         │
-│                                                                  │
-│  ┌──────────────────────┐      ┌──────────────────────────────┐ │
-│  │   WordPress (CMS)    │      │   Next.js Frontend           │ │
-│  │   ├── Pods Plugin    │─────▶│   ├── GSAP Animations        │ │
-│  │   ├── Yoast SEO      │ REST │   ├── Tailwind CSS           │ │
-│  │   └── App Passwords  │ API  │   └── Apple/Claude Design    │ │
-│  │   Port: 8082         │      │   Port: 8084                 │ │
-│  └──────────────────────┘      └──────────────────────────────┘ │
-│           │                                                      │
-│           ▼                                                      │
-│  ┌──────────────────────┐      ┌──────────────────────────────┐ │
-│  │      MariaDB         │      │       Make.com               │ │
-│  │   Port: 3307         │      │   └── GitHub → WP Posts      │ │
-│  └──────────────────────┘      └──────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Implementation Steps
-1. [ ] Add WordPress + MariaDB to docker-compose.yml
-2. [ ] Create Next.js website app in `apps/website/`
-3. [ ] Configure WordPress with Pods plugin
-4. [ ] Build GSAP animation components
-5. [ ] Create MVP pages (Home, About, Contact)
-6. [ ] Set up Make.com integration for feature announcements
-
----
-
-## CMS Comparison
-
-### WordPress (Headless)
-| Aspect | Details |
-|--------|---------|
-| **Type** | Traditional CMS, can be headless |
-| **Database** | MySQL/MariaDB |
-| **API** | REST API built-in, GraphQL via plugin |
-| **Pros** | Huge ecosystem, familiar to content teams, ACF for custom fields |
-| **Cons** | PHP stack (different from your Node/Python), security concerns, bloated |
-| **GSAP** | Via custom frontend (React/Next.js) |
-| **Best For** | Teams familiar with WordPress, need plugin ecosystem |
-
-### Strapi
-| Aspect | Details |
-|--------|---------|
-| **Type** | Headless CMS (Node.js) |
-| **Database** | PostgreSQL, MySQL, SQLite, MongoDB |
-| **API** | REST + GraphQL |
-| **Pros** | Self-hosted, customizable, good admin UI, uses your existing PostgreSQL |
-| **Cons** | Can be resource-heavy, v5 breaking changes |
-| **GSAP** | Full control via Next.js frontend |
-| **Best For** | Teams wanting Node.js stack, self-hosted control |
-
-### Payload CMS
-| Aspect | Details |
-|--------|---------|
-| **Type** | Headless CMS (TypeScript-native) |
-| **Database** | MongoDB, PostgreSQL (v3+) |
-| **API** | REST + GraphQL + Local API |
-| **Pros** | TypeScript-first, excellent DX, code-based config, self-hosted |
-| **Cons** | Smaller community, newer |
-| **GSAP** | Full control, can embed in Next.js app |
-| **Best For** | TypeScript teams, developers who want code-first approach |
-
-### Sanity
-| Aspect | Details |
-|--------|---------|
-| **Type** | Headless CMS (Hosted + Self-hosted studio) |
-| **Database** | Sanity Cloud (hosted) |
-| **API** | GROQ (custom query language) + GraphQL |
-| **Pros** | Real-time collaboration, excellent content modeling, portable text |
-| **Cons** | Hosted data (vendor lock-in), costs at scale, learning GROQ |
-| **GSAP** | Full control via frontend |
-| **Best For** | Content teams needing real-time collaboration |
-
-### Directus
-| Aspect | Details |
-|--------|---------|
-| **Type** | Headless CMS (wraps any SQL database) |
-| **Database** | PostgreSQL, MySQL, SQLite, etc. |
-| **API** | REST + GraphQL |
-| **Pros** | Use existing database, beautiful admin, self-hosted |
-| **Cons** | Less opinionated, setup complexity |
-| **GSAP** | Full control via frontend |
-| **Best For** | Teams with existing database, want flexibility |
-
-### Ghost
-| Aspect | Details |
-|--------|---------|
-| **Type** | Publishing platform (can be headless) |
-| **Database** | MySQL/SQLite |
-| **API** | Content API + Admin API |
-| **Pros** | Beautiful editor, built for publishing, newsletters, memberships |
-| **Cons** | Less flexible for non-blog content, limited custom fields |
-| **GSAP** | Via headless frontend |
-| **Best For** | Content-heavy sites, newsletters, memberships |
-
-### Keystatic
-| Aspect | Details |
-|--------|---------|
-| **Type** | Git-based CMS |
-| **Database** | Git (files in repo) |
-| **API** | Direct file access, works with Astro/Next.js |
-| **Pros** | No database needed, version controlled content, free |
-| **Cons** | Not for large teams, no real-time collab, content in code repo |
-| **GSAP** | Full control via Astro/Next.js |
-| **Best For** | Developer-managed content, static sites |
-
-### Recommendation Matrix
-
-| Requirement | Best Options |
-|-------------|--------------|
-| Matches existing stack (Node/TS) | **Payload**, Strapi, Directus |
-| Uses existing PostgreSQL | **Directus**, Strapi, Payload v3 |
-| Best developer experience | **Payload**, Sanity |
-| Best for content teams | Sanity, WordPress, **Ghost** |
-| Self-hosted, no vendor lock-in | **Payload**, Strapi, Directus, Ghost |
-| Simplest setup | **Keystatic**, Ghost |
-| Enterprise features | Sanity, WordPress, Strapi |
-| TypeScript-native | **Payload** |
-
-### Initial Recommendation
-Given your stack (Node.js, TypeScript, PostgreSQL, React), consider:
-
-1. **Payload CMS** - TypeScript-native, code-first, can use your PostgreSQL
-2. **Directus** - Wraps your existing PostgreSQL, beautiful admin
-3. **Strapi** - Popular, Node.js, good ecosystem
-
-All three support GSAP via custom Next.js frontend and integrate well with Make.com via webhooks/REST API.
-
----
-
-## Development Velocity Metrics
-
-### Actual Time Tracking (Claude Code vs Traditional)
-
-| Phase | Traditional Estimate | Claude Code Actual | Speedup | Method |
-|-------|---------------------|-------------------|---------|--------|
-| **Phase 0: Pre-Implementation** | 4 hours | 1 hour | 4x | Manual + scripting |
-| **Phase 1: Service Foundation** | 16 hours (2 days) | 5 minutes | **192x** | **5 parallel agents** |
-| **Phase 2: Medical Coding Agent** | 20 hours (2.5 days) | 5 minutes | **240x** | **6 parallel agents** |
-| **TOTAL** | **40 hours (5 days)** | **~1 hour** | **40x** | **Parallel execution** |
-
-### Productivity Analysis
-
-**Agent Collaboration Success:**
-- Phase 1: 5 agents completed 8 tasks simultaneously
-- Phase 2: 6 agents completed 7 tasks simultaneously
-- Zero rework needed (all tasks completed correctly first time)
-- No debugging cycles required
-
-**Code Quality Metrics:**
-- ✅ 100% TypeScript type-safe
-- ✅ Consistent patterns (reused from BFF)
-- ✅ Production-ready Docker configs
-- ✅ Complete test harness from day 1
-- ✅ Comprehensive documentation
-- ✅ Backward compatibility maintained
-
-**Lines of Code Written:**
-- Phase 1: 2,406 files created (complete service)
-- Phase 2: 1,285 lines added (services + agents)
-- Total: ~15,000+ lines including dependencies
-
-**Key Achievements:**
-1. **Parallel Execution**: Multiple agents working simultaneously
-2. **Pattern Reuse**: BFF patterns adapted instantly
-3. **Zero Debugging**: No setup/configuration issues
-4. **Complete Documentation**: Auto-generated inline
-
-**Time Saved:**
-- Development: ~39 hours saved
-- Testing: Immediate regression testing
-- Documentation: Generated automatically
-- Architecture: Planned comprehensively upfront
-
-**Conservative Estimates:**
-- Estimates assume senior developer familiar with stack
-- Does not include:
-  - Learning curve for new technologies
-  - Environment setup debugging
-  - Code review iterations
-  - Documentation writing time
-  - Test creation time
-
-**Realistic Speedup (Production Environment):**
-- Junior Developer: 300x faster
-- Mid-Level Developer: 200x faster
-- Senior Developer: 100x faster
-
-### Development Workflow
-
-**Traditional Approach (Sequential):**
-1. Read documentation → 2 hours
-2. Setup environment → 2 hours
-3. Write boilerplate → 3 hours
-4. Implement features → 8 hours
-5. Write tests → 3 hours
-6. Debug issues → 4 hours
-7. Documentation → 2 hours
-**Total: 24 hours (3 days)**
-
-**Claude Code Approach (Parallel):**
-1. Plan with AI → 10 minutes
-2. Launch 5-6 agents → instant
-3. Agents complete in parallel → 5 minutes
-4. Verify & commit → 5 minutes
-**Total: 20 minutes**
-
-**Multiplier Effect:**
-- More complex features = higher speedup
-- Parallel agents scale with task complexity
-- No context switching overhead
-- Immediate best practices application
+## Development Principles (Summary)
+
+> Full details: [`DEV_PRINCIPLES.md`](docs/context/DEV_PRINCIPLES.md)
+
+1. **Service Isolation** — New services don't modify existing code
+2. **Additive Changes Only** — Migrations add, never alter
+3. **Regression Testing** — Test before, during, and after implementation
+4. **Health Checks** — Independent per service, no cascading failures
+5. **Incremental Integration** — Use existing patterns (BFF proxy, JWT, shared types)
+6. **No tight coupling** — Services communicate via APIs only

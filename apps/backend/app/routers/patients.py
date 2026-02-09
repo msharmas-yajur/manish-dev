@@ -53,20 +53,93 @@ class PatientResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
 
-@router.get("/", response_model=List[PatientResponse])
+@router.get("/")
 async def list_patients(
+    page: int = 1,
+    pageSize: int = 8,
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    gender: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
     x_user_id: Optional[str] = Header(None),
     session: AsyncSession = Depends(get_postgres_session)
 ):
-    """List all patients (paginated)."""
-    result = await session.execute(
-        text("SELECT * FROM patients ORDER BY created_at DESC LIMIT :limit OFFSET :skip"),
-        {"limit": limit, "skip": skip}
+    """List all patients (paginated with optional filters)."""
+    # Support both page/pageSize (frontend) and skip/limit (legacy) params
+    if page > 1 or pageSize != 8:
+        offset = (page - 1) * pageSize
+        row_limit = pageSize
+    else:
+        offset = skip
+        row_limit = limit
+
+    # Build WHERE clauses
+    conditions = []
+    params: dict = {"limit": row_limit, "skip": offset}
+
+    if search and search.strip():
+        conditions.append(
+            "(first_name ILIKE :search OR last_name ILIKE :search "
+            "OR abha_id ILIKE :search OR phone ILIKE :search "
+            "OR email ILIKE :search OR medical_record_number ILIKE :search)"
+        )
+        params["search"] = f"%{search.strip()}%"
+
+    if status and status != "all":
+        conditions.append("status = :status")
+        params["status"] = status
+
+    if gender and gender != "all":
+        conditions.append("gender ILIKE :gender")
+        params["gender"] = gender
+
+    where_clause = " AND ".join(conditions)
+    if where_clause:
+        where_clause = "WHERE " + where_clause
+
+    # Get total count
+    count_result = await session.execute(
+        text(f"SELECT COUNT(*) FROM patients {where_clause}"),
+        params
     )
-    patients = result.mappings().all()
-    return patients
+    total = count_result.scalar() or 0
+
+    # Get paginated results
+    result = await session.execute(
+        text(f"SELECT * FROM patients {where_clause} ORDER BY created_at DESC LIMIT :limit OFFSET :skip"),
+        params
+    )
+    rows = result.mappings().all()
+
+    # Return wrapped response with camelCase field names for frontend
+    patients_list = []
+    for row in rows:
+        patients_list.append({
+            "id": str(row["id"]),
+            "firstName": row.get("first_name") or "",
+            "lastName": row.get("last_name") or "",
+            "fullName": " ".join(filter(None, [row.get("first_name"), row.get("last_name")])) or "Unknown",
+            "abhaNumber": row.get("abha_id") or "",
+            "abhaAddress": row.get("abha_address") or "",
+            "phone": row.get("phone") or "",
+            "email": row.get("email") or "",
+            "dateOfBirth": str(row["date_of_birth"]) if row.get("date_of_birth") else "",
+            "gender": (row.get("gender") or "").capitalize() or "",
+            "status": row.get("status") or "NOT_LINKED",
+            "medicalRecordNumber": row.get("medical_record_number") or "",
+            "erpnextPatientId": row.get("erpnext_patient_id") or "",
+            "syncSource": row.get("sync_source") or "",
+            "createdAt": row["created_at"].isoformat() if row.get("created_at") else "",
+            "updatedAt": row["updated_at"].isoformat() if row.get("updated_at") else "",
+        })
+
+    return {
+        "patients": patients_list,
+        "total": total,
+        "page": page,
+        "pageSize": pageSize,
+    }
 
 
 @router.get("/by-abha/{abha_id}", response_model=PatientResponse)

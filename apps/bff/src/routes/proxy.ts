@@ -14,7 +14,7 @@ async function proxyRequest(
   next: NextFunction
 ) {
   try {
-    const url = new URL(req.path, targetUrl);
+    const url = new URL(targetUrl);
     url.search = new URLSearchParams(req.query as Record<string, string>).toString();
 
     const headers: Record<string, string> = {
@@ -64,7 +64,7 @@ async function proxyRequest(
 // Backend API routes (protected)
 proxyRouter.all('/backend/*', authenticate, (req, res, next) => {
   const path = req.path.replace('/backend', '');
-  const targetUrl = config.backendUrl + path;
+  const targetUrl = config.backendUrl + '/api' + path;
   proxyRequest(targetUrl, req, res, next);
 });
 
