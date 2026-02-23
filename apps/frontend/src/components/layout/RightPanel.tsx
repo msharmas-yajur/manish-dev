@@ -158,12 +158,12 @@ export function RightPanel() {
 
   return (
     <Drawer
-      variant="persistent"
+      variant="temporary"
       anchor="right"
       open={rightPanelOpen}
+      onClose={closeRightPanel}
       sx={{
-        width: rightPanelOpen ? RIGHT_PANEL_WIDTH : 0,
-        flexShrink: 0,
+        zIndex: (theme) => theme.zIndex.drawer + 1,
         '& .MuiDrawer-paper': {
           width: RIGHT_PANEL_WIDTH,
           boxSizing: 'border-box',
@@ -173,11 +173,9 @@ export function RightPanel() {
           borderLeft: 1,
           borderColor: 'divider',
           bgcolor: 'background.paper',
-          transition: (theme) =>
-            theme.transitions.create(['transform', 'width'], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
+        },
+        '& .MuiBackdrop-root': {
+          backgroundColor: 'rgba(0, 0, 0, 0.3)',
         },
       }}
     >

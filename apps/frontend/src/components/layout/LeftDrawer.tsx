@@ -58,10 +58,12 @@ function getIcon(iconName: string): React.ReactElement {
  * - Slides out from left rail when expanded (180px wide)
  * - Shows full navigation labels alongside icons
  * - Filters items by user role using getFilteredNavItems
- * - Persistent drawer (pushes content)
+ * - Temporary drawer (overlays content, does not push it)
+ * - Positioned after the LeftRail (at left: 56px)
+ * - Closes when clicking outside or pressing Escape
  */
 export function LeftDrawer() {
-  const { leftDrawerOpen } = useLayout();
+  const { leftDrawerOpen, closeLeftDrawer } = useLayout();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -98,12 +100,21 @@ export function LeftDrawer() {
 
   return (
     <Drawer
-      variant="persistent"
+      variant="temporary"
       anchor="left"
       open={leftDrawerOpen}
+      onClose={closeLeftDrawer}
+      hideBackdrop
+      ModalProps={{
+        keepMounted: true, // Better open performance on mobile
+      }}
       sx={{
-        width: leftDrawerOpen ? LEFT_DRAWER_WIDTH : 0,
+        width: LEFT_DRAWER_WIDTH,
         flexShrink: 0,
+        // Position the modal container to not block content interaction
+        '& .MuiModal-root': {
+          pointerEvents: 'none',
+        },
         '& .MuiDrawer-paper': {
           width: LEFT_DRAWER_WIDTH,
           boxSizing: 'border-box',
@@ -113,6 +124,8 @@ export function LeftDrawer() {
           borderRight: 1,
           borderColor: 'divider',
           bgcolor: 'background.paper',
+          boxShadow: 4, // Add shadow for overlay effect
+          pointerEvents: 'auto', // Re-enable pointer events on the drawer itself
           transition: (theme) =>
             theme.transitions.create(['transform', 'width'], {
               easing: theme.transitions.easing.sharp,
