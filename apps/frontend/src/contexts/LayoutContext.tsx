@@ -150,15 +150,14 @@ export function useLayout(): LayoutContextState {
 
 /**
  * Custom hook to calculate content area margins based on layout state
- * Returns CSS values for marginLeft and marginRight
+ * Returns FIXED CSS values for marginLeft and marginRight
+ * Margins do not change when drawers open/close because drawers use overlay behavior
  */
 export function useContentMargins(): { marginLeft: number; marginRight: number } {
-  const { leftDrawerOpen, rightPanelOpen } = useLayout();
-
-  return useMemo(() => ({
-    marginLeft: LEFT_RAIL_WIDTH + (leftDrawerOpen ? LEFT_DRAWER_WIDTH : 0),
-    marginRight: RIGHT_RAIL_WIDTH + (rightPanelOpen ? RIGHT_PANEL_WIDTH : 0),
-  }), [leftDrawerOpen, rightPanelOpen]);
+  return {
+    marginLeft: LEFT_RAIL_WIDTH,   // Always 56px (just the rail, not drawer)
+    marginRight: RIGHT_RAIL_WIDTH, // Always 56px (just the rail, not panel)
+  };
 }
 
 export default LayoutContext;
