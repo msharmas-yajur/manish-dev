@@ -50,11 +50,6 @@ function LayoutContent({ children }: MainLayoutProps) {
           minHeight: '100vh',
           ml: `${marginLeft}px`,
           mr: `${marginRight}px`,
-          transition: (theme) =>
-            theme.transitions.create(['margin-left', 'margin-right'], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
         }}
       >
         {/* Spacer for fixed AppBar */}
