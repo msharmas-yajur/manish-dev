@@ -3,9 +3,17 @@
 ---
 ## >>> RESUME HERE <<<
 
-**Current Focus:** ERPNext Integration & Patient Sync
+**Current Focus:** API Documentation & Developer Experience
 **Task File:** `/docs/PROJECT_TASKS.md`
 **Code Review:** `/docs/CODE_REVIEW_REPORT.md`
+
+**Completed (Feb 25, 2026):**
+- Unified Swagger API documentation at `/api/docs`
+- Combined BFF (42+ endpoints) + Backend (20+ endpoints) specs
+- Dynamic spec merging with 60-second cache
+- JSDoc annotations added to all BFF route files
+- Nginx routing fix (`^~` modifier) for API priority
+- Docker DNS config for external API access (Google OAuth)
 
 **Completed (Feb 8, 2026):**
 - Frappe/ERPNext v16 provisioned (8-container stack, Healthcare module)
@@ -63,7 +71,7 @@ Detailed documentation is split into topic-based files under `docs/context/`:
 | [`AUTH_AND_RBAC.md`](docs/context/AUTH_AND_RBAC.md) | JWT + OAuth decisions, Frappe OAuth flow, RBAC roles/permissions, password reset |
 | [`ERPNEXT_INTEGRATION.md`](docs/context/ERPNEXT_INTEGRATION.md) | Frappe/ERPNext setup, containers, volumes, gotchas, bidirectional patient sync, env vars |
 | [`DATABASE_SCHEMA.md`](docs/context/DATABASE_SCHEMA.md) | All table schemas — users, patients, RBAC, LLM config, copilot audit |
-| [`API_REFERENCE.md`](docs/context/API_REFERENCE.md) | All API endpoints — auth, health, sync, RBAC |
+| [`API_REFERENCE.md`](docs/context/API_REFERENCE.md) | All API endpoints — auth, health, sync, RBAC, Swagger docs |
 | [`COPILOTKIT.md`](docs/context/COPILOTKIT.md) | CopilotKit architecture decisions, agent capabilities, implementation phases |
 | [`FRONTEND_DESIGN.md`](docs/context/FRONTEND_DESIGN.md) | Material Design 3 guidelines, layout dimensions, screen design references |
 | [`COMPANY_WEBSITE.md`](docs/context/COMPANY_WEBSITE.md) | Website planning, design language, WordPress + Next.js architecture, MVP pages |
@@ -124,6 +132,7 @@ Detailed documentation is split into topic-based files under `docs/context/`:
 - [x] CopilotKit Phase 1 (Service Foundation) & Phase 2 (Medical Coding Agent)
 - [x] Frappe/ERPNext v16 (8-container stack, Healthcare module)
 - [x] Bidirectional Patient Sync (all 6 phases)
+- [x] Unified Swagger API Documentation (BFF + Backend merged)
 
 ### Pending
 - [ ] FHIR Patient India IG alignment

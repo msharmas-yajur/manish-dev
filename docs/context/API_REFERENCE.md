@@ -45,3 +45,16 @@
 | PUT | `/api/users/:userId/roles` | — | Assign roles to user (replaces all) |
 | POST | `/api/users/:userId/roles/:roleName` | — | Add role to user |
 | DELETE | `/api/users/:userId/roles/:roleName` | — | Remove role from user |
+
+## API Documentation (Swagger)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/docs` | Swagger UI with unified API documentation |
+| GET | `/api/docs/openapi.json` | Merged OpenAPI spec (BFF + Backend) |
+| GET | `/api/docs/bff/openapi.json` | BFF-only OpenAPI spec |
+
+**Notes:**
+- The merged spec combines BFF endpoints with Backend (FastAPI) endpoints
+- Backend endpoints appear under `/backend/*` prefix with `Backend:` tag prefix
+- Backend schemas are prefixed with `Backend_` to avoid conflicts
+- Spec is cached for 60 seconds to avoid repeated Backend requests
