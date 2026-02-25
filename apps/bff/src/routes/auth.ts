@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import type { Router as RouterType } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -12,7 +13,7 @@ import { logger } from '../config/logger';
 import { GoogleUser } from '../config/passport';
 import { getUserRoleInfo, assignDefaultRole } from '../services/rbac';
 
-export const authRouter = Router();
+export const authRouter: RouterType = Router();
 
 // Validation schemas
 const loginSchema = z.object({
@@ -36,6 +37,74 @@ const resetPasswordSchema = z.object({
   password: z.string().min(6),
 });
 
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: User login
+ *     description: Authenticates a user with email and password, returns JWT token and user details including roles and permissions.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       description: JWT authentication token
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           format: uuid
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                         firstName:
+ *                           type: string
+ *                         lastName:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *                         roles:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         permissions:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Invalid credentials
+ */
 // Login
 authRouter.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -91,6 +160,82 @@ authRouter.post('/login', async (req: Request, res: Response, next: NextFunction
   }
 });
 
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: User registration
+ *     description: Creates a new user account with the provided details. Assigns default role automatically.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, firstName, lastName]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: newuser@example.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: securepassword
+ *               firstName:
+ *                 type: string
+ *                 minLength: 1
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 minLength: 1
+ *                 example: Doe
+ *     responses:
+ *       201:
+ *         description: Registration successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       description: JWT authentication token
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           format: uuid
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                         firstName:
+ *                           type: string
+ *                         lastName:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *                         roles:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         permissions:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *       400:
+ *         description: Invalid input
+ *       409:
+ *         description: Email already registered
+ */
 // Register
 authRouter.post('/register', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -156,6 +301,54 @@ authRouter.post('/register', async (req: Request, res: Response, next: NextFunct
   }
 });
 
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Get current user
+ *     description: Returns the authenticated user's profile information including roles and permissions.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                     firstName:
+ *                       type: string
+ *                     lastName:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     roles:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     permissions:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ */
 // Get current user
 authRouter.get('/me', authenticate, async (req, res, next) => {
   try {
@@ -191,6 +384,32 @@ authRouter.get('/me', authenticate, async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: User logout
+ *     description: Logs out the authenticated user. Note - This is primarily for client-side token invalidation acknowledgment since JWTs are stateless.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ */
 // Logout (just for client-side token invalidation acknowledgment)
 authRouter.post('/logout', authenticate, (req, res) => {
   const authReq = req as AuthenticatedRequest;
@@ -202,6 +421,42 @@ authRouter.post('/logout', authenticate, (req, res) => {
 // Password Reset Routes
 // =============================================
 
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     description: Initiates the password reset process by generating a reset token. Always returns success to prevent email enumeration attacks.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: Password reset email sent (if account exists)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: If an account with that email exists, a password reset link has been sent.
+ *       400:
+ *         description: Invalid email address
+ */
 // Request password reset
 authRouter.post('/forgot-password', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -274,6 +529,50 @@ authRouter.post('/forgot-password', async (req: Request, res: Response, next: Ne
   }
 });
 
+/**
+ * @swagger
+ * /auth/verify-reset-token/{token}:
+ *   get:
+ *     summary: Verify password reset token
+ *     description: Validates a password reset token before showing the reset form. Optional endpoint for better UX.
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The password reset token received via email
+ *     responses:
+ *       200:
+ *         description: Token validation result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                 - type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: false
+ *                     error:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                           example: Invalid or expired reset token
+ */
 // Verify reset token (optional endpoint for UX - check if token is valid before showing form)
 authRouter.get('/verify-reset-token/:token', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -308,6 +607,46 @@ authRouter.get('/verify-reset-token/:token', async (req: Request, res: Response,
   }
 });
 
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     description: Resets the user's password using a valid reset token. Token must not be expired.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 minLength: 1
+ *                 description: The password reset token received via email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 description: The new password (minimum 6 characters)
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password has been reset successfully. You can now log in with your new password.
+ *       400:
+ *         description: Invalid or expired reset token, or invalid password
+ */
 // Reset password with token
 authRouter.post('/reset-password', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -363,6 +702,33 @@ authRouter.post('/reset-password', async (req: Request, res: Response, next: Nex
 // Google OAuth Routes
 // =============================================
 
+/**
+ * @swagger
+ * /auth/google:
+ *   get:
+ *     summary: Initiate Google OAuth flow
+ *     description: Redirects the user to Google's OAuth consent page for authentication.
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to Google OAuth consent page
+ *       503:
+ *         description: Google OAuth is not configured
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: Google OAuth is not configured
+ */
 // Initiate Google OAuth flow
 authRouter.get('/google', (req: Request, res: Response, next: NextFunction) => {
   if (!config.google.clientId) {
@@ -378,6 +744,28 @@ authRouter.get('/google', (req: Request, res: Response, next: NextFunction) => {
   })(req, res, next);
 });
 
+/**
+ * @swagger
+ * /auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback
+ *     description: Handles the callback from Google OAuth. On success, redirects to frontend with JWT token. On failure, redirects to login page with error.
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: Authorization code from Google
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: State parameter for CSRF protection
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend with token on success, or to login page with error on failure
+ */
 // Google OAuth callback
 authRouter.get(
   '/google/callback',
@@ -421,6 +809,33 @@ authRouter.get(
 // Frappe/ERPNext OAuth Routes
 // =============================================
 
+/**
+ * @swagger
+ * /auth/frappe:
+ *   get:
+ *     summary: Initiate Frappe/ERPNext OAuth flow
+ *     description: Redirects the user to Frappe/ERPNext OAuth consent page for authentication.
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to Frappe OAuth consent page
+ *       503:
+ *         description: Frappe OAuth is not configured
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: Frappe OAuth is not configured
+ */
 // Initiate Frappe OAuth flow
 authRouter.get('/frappe', (req: Request, res: Response) => {
   if (!config.frappe.clientId) {
@@ -447,6 +862,28 @@ authRouter.get('/frappe', (req: Request, res: Response) => {
   );
 });
 
+/**
+ * @swagger
+ * /auth/frappe/callback:
+ *   get:
+ *     summary: Frappe/ERPNext OAuth callback
+ *     description: Handles the callback from Frappe/ERPNext OAuth. Exchanges authorization code for access token, fetches user profile, creates or links user account, and redirects to frontend with JWT token.
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: Authorization code from Frappe
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: State parameter for CSRF protection
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend with token on success, or to login page with error on failure
+ */
 // Frappe OAuth callback
 authRouter.get('/frappe/callback', async (req: Request, res: Response) => {
   try {
@@ -589,6 +1026,43 @@ authRouter.get('/frappe/callback', async (req: Request, res: Response) => {
 // Provider Discovery
 // =============================================
 
+/**
+ * @swagger
+ * /auth/providers:
+ *   get:
+ *     summary: Get available auth providers
+ *     description: Returns the list of configured authentication providers (local, Google, Frappe).
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: List of available authentication providers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     providers:
+ *                       type: object
+ *                       properties:
+ *                         local:
+ *                           type: boolean
+ *                           description: Whether local (email/password) authentication is enabled
+ *                           example: true
+ *                         google:
+ *                           type: boolean
+ *                           description: Whether Google OAuth is configured
+ *                           example: true
+ *                         frappe:
+ *                           type: boolean
+ *                           description: Whether Frappe/ERPNext OAuth is configured
+ *                           example: false
+ */
 // Check available auth providers
 authRouter.get('/providers', (req: Request, res: Response) => {
   res.json({

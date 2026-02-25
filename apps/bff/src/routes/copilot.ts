@@ -1,10 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import type { Router as RouterType } from 'express';
 import { config } from '../config/env';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { logger } from '../config/logger';
 import { createError } from '../middleware/errorHandler';
 
-export const copilotRouter = Router();
+export const copilotRouter: RouterType = Router();
 
 /**
  * Copilot Service Proxy Configuration
@@ -229,11 +230,81 @@ async function proxyCopilotStreamingRequest(
 // ============================================================================
 
 /**
- * Main CopilotKit endpoint
- * POST /api/copilot
- *
- * This is the primary endpoint that CopilotKit's frontend SDK calls.
- * It receives chat messages and returns AI responses.
+ * @swagger
+ * tags:
+ *   - name: Copilot
+ *     description: CopilotKit AI assistant endpoints
+ */
+
+/**
+ * @swagger
+ * /api/copilot:
+ *   post:
+ *     summary: Main CopilotKit endpoint
+ *     description: |
+ *       Primary endpoint that CopilotKit's frontend SDK calls.
+ *       Receives chat messages and returns AI responses.
+ *       Supports both standard JSON responses and Server-Sent Events (SSE) streaming.
+ *     tags: [Copilot]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - messages
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 description: Array of chat messages
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [user, assistant, system]
+ *                     content:
+ *                       type: string
+ *               context:
+ *                 type: object
+ *                 description: Optional context (patient, codes, etc.)
+ *               actions:
+ *                 type: array
+ *                 description: Available CopilotKit actions
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: AI response (JSON or SSE stream)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 messages:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       role:
+ *                         type: string
+ *                       content:
+ *                         type: string
+ *           text/event-stream:
+ *             schema:
+ *               type: string
+ *               description: SSE stream of AI response chunks
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       503:
+ *         description: Copilot service unavailable
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 copilotRouter.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   const acceptHeader = req.headers.accept || '';
@@ -248,10 +319,88 @@ copilotRouter.post('/', authenticate, async (req: Request, res: Response, next: 
 });
 
 /**
- * Chat completions endpoint (OpenAI-compatible)
- * POST /api/copilot/chat
- *
- * Alternative endpoint for chat completions with streaming support.
+ * @swagger
+ * /api/copilot/chat:
+ *   post:
+ *     summary: Chat completions endpoint
+ *     description: |
+ *       OpenAI-compatible chat completions endpoint with streaming support.
+ *       Alternative to the main CopilotKit endpoint for direct chat interactions.
+ *     tags: [Copilot]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - messages
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 description: Array of chat messages
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [user, assistant, system]
+ *                     content:
+ *                       type: string
+ *               stream:
+ *                 type: boolean
+ *                 description: Enable streaming response
+ *                 default: false
+ *               model:
+ *                 type: string
+ *                 description: Model to use for completion
+ *               temperature:
+ *                 type: number
+ *                 description: Sampling temperature (0-2)
+ *                 minimum: 0
+ *                 maximum: 2
+ *               max_tokens:
+ *                 type: integer
+ *                 description: Maximum tokens in response
+ *     responses:
+ *       200:
+ *         description: Chat completion response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 object:
+ *                   type: string
+ *                   example: chat.completion
+ *                 choices:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       index:
+ *                         type: integer
+ *                       message:
+ *                         type: object
+ *                         properties:
+ *                           role:
+ *                             type: string
+ *                           content:
+ *                             type: string
+ *                       finish_reason:
+ *                         type: string
+ *           text/event-stream:
+ *             schema:
+ *               type: string
+ *               description: SSE stream of completion chunks
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       503:
+ *         description: Copilot service unavailable
  */
 copilotRouter.post('/chat', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   const { stream } = req.body;
@@ -264,13 +413,84 @@ copilotRouter.post('/chat', authenticate, async (req: Request, res: Response, ne
 });
 
 /**
- * Agent actions endpoint
- * POST /api/copilot/actions/:actionName
- *
- * Executes specific CopilotKit agent actions:
- * - searchMedicalCodes: Search ICD-10, CPT, HCPCS codes
- * - getPatientData: Retrieve patient information
- * - generateClinicalNote: Generate clinical documentation
+ * @swagger
+ * /api/copilot/actions/{actionName}:
+ *   post:
+ *     summary: Execute agent action
+ *     description: |
+ *       Executes specific CopilotKit agent actions:
+ *       - searchMedicalCodes: Search ICD-10, CPT, HCPCS codes
+ *       - getPatientData: Retrieve patient information
+ *       - generateClinicalNote: Generate clinical documentation
+ *     tags: [Copilot]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: actionName
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [searchMedicalCodes, getPatientData, generateClinicalNote]
+ *         description: Name of the action to execute
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Action-specific parameters
+ *             oneOf:
+ *               - title: searchMedicalCodes
+ *                 type: object
+ *                 properties:
+ *                   query:
+ *                     type: string
+ *                     description: Search query for medical codes
+ *                   codeType:
+ *                     type: string
+ *                     enum: [ICD-10, CPT, HCPCS]
+ *                   limit:
+ *                     type: integer
+ *                     default: 10
+ *               - title: getPatientData
+ *                 type: object
+ *                 properties:
+ *                   patientId:
+ *                     type: string
+ *                     format: uuid
+ *               - title: generateClinicalNote
+ *                 type: object
+ *                 properties:
+ *                   patientId:
+ *                     type: string
+ *                     format: uuid
+ *                   noteType:
+ *                     type: string
+ *                     enum: [progress, consultation, discharge]
+ *     responses:
+ *       200:
+ *         description: Action executed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   description: Action-specific response data
+ *       400:
+ *         description: Invalid action name
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       503:
+ *         description: Copilot service unavailable
  */
 copilotRouter.post(
   '/actions/:actionName',
@@ -294,41 +514,197 @@ copilotRouter.post(
 );
 
 /**
- * Context endpoint
- * GET /api/copilot/context
- *
- * Retrieves the current context for the Copilot session,
- * including active patient, recent codes, etc.
+ * @swagger
+ * /api/copilot/context:
+ *   get:
+ *     summary: Get session context
+ *     description: |
+ *       Retrieves the current context for the Copilot session,
+ *       including active patient, recent codes, user preferences, etc.
+ *     tags: [Copilot]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current session context
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 sessionId:
+ *                   type: string
+ *                   description: Current session identifier
+ *                 activePatient:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     name:
+ *                       type: string
+ *                 recentCodes:
+ *                   type: array
+ *                   description: Recently used medical codes
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       code:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                 preferences:
+ *                   type: object
+ *                   description: User preferences for AI interactions
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       503:
+ *         description: Copilot service unavailable
  */
 copilotRouter.get('/context', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   return proxyCopilotRequest('/copilot/context', req, res, next);
 });
 
 /**
- * Session management endpoint
- * POST /api/copilot/session
- *
- * Creates or updates a Copilot session with preferences and context.
+ * @swagger
+ * /api/copilot/session:
+ *   post:
+ *     summary: Create or update session
+ *     description: Creates or updates a Copilot session with preferences and context.
+ *     tags: [Copilot]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 description: Existing session ID to update (omit to create new)
+ *               activePatientId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Set active patient for context
+ *               preferences:
+ *                 type: object
+ *                 description: User preferences
+ *                 properties:
+ *                   language:
+ *                     type: string
+ *                     default: en
+ *                   verbosity:
+ *                     type: string
+ *                     enum: [concise, normal, detailed]
+ *                   specialty:
+ *                     type: string
+ *                     description: Medical specialty context
+ *               metadata:
+ *                 type: object
+ *                 description: Additional session metadata
+ *     responses:
+ *       200:
+ *         description: Session created or updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 sessionId:
+ *                   type: string
+ *                 created:
+ *                   type: boolean
+ *                   description: True if new session, false if updated
+ *                 expiresAt:
+ *                   type: string
+ *                   format: date-time
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       503:
+ *         description: Copilot service unavailable
  */
 copilotRouter.post('/session', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   return proxyCopilotRequest('/copilot/session', req, res, next);
 });
 
 /**
- * Clear session endpoint
- * DELETE /api/copilot/session
- *
- * Clears the current Copilot session and conversation history.
+ * @swagger
+ * /api/copilot/session:
+ *   delete:
+ *     summary: Clear session
+ *     description: Clears the current Copilot session and conversation history.
+ *     tags: [Copilot]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Session cleared successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Session cleared
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       503:
+ *         description: Copilot service unavailable
  */
 copilotRouter.delete('/session', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   return proxyCopilotRequest('/copilot/session', req, res, next);
 });
 
 /**
- * Health check endpoint
- * GET /api/copilot/health
- *
- * Checks the health status of the Copilot service.
+ * @swagger
+ * /api/copilot/health:
+ *   get:
+ *     summary: Health check
+ *     description: Checks the health status of the Copilot service and its upstream dependencies.
+ *     tags: [Copilot]
+ *     responses:
+ *       200:
+ *         description: Copilot service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   enum: [healthy, unhealthy]
+ *                   example: healthy
+ *                 service:
+ *                   type: string
+ *                   example: copilot
+ *                 upstream:
+ *                   type: object
+ *                   description: Upstream service health details
+ *       503:
+ *         description: Copilot service is unhealthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: unhealthy
+ *                 service:
+ *                   type: string
+ *                   example: copilot
+ *                 error:
+ *                   type: string
+ *                   example: Failed to connect to Copilot service
  */
 copilotRouter.get('/health', async (req: Request, res: Response, next: NextFunction) => {
   try {

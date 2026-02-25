@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import type { Router as RouterType } from 'express';
 import { z } from 'zod';
 import { pgPool } from '../config/database';
 import { createError } from '../middleware/errorHandler';
@@ -17,7 +18,7 @@ import {
 } from '../services/rbac';
 import { logger } from '../config/logger';
 
-export const rolesRouter = Router();
+export const rolesRouter: RouterType = Router();
 
 // Validation schemas
 const assignRolesSchema = z.object({
@@ -39,7 +40,49 @@ const createRoleSchema = z.object({
 // =============================================
 
 /**
- * GET /api/roles - List all roles
+ * @swagger
+ * /roles:
+ *   get:
+ *     summary: List all roles
+ *     description: Returns a list of all roles in the system.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of roles retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       name:
+ *                         type: string
+ *                         example: admin
+ *                       displayName:
+ *                         type: string
+ *                         example: Administrator
+ *                       description:
+ *                         type: string
+ *                       isSystem:
+ *                         type: boolean
+ *                       isActive:
+ *                         type: boolean
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:read)
  */
 rolesRouter.get(
   '/',
@@ -56,7 +99,70 @@ rolesRouter.get(
 );
 
 /**
- * POST /api/roles - Create a new role
+ * @swagger
+ * /roles:
+ *   post:
+ *     summary: Create a new role
+ *     description: Creates a new role with the specified name, display name, and optional description.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, displayName]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 50
+ *                 pattern: ^[a-z_]+$
+ *                 description: Role name (lowercase letters and underscores only)
+ *                 example: content_editor
+ *               displayName:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 100
+ *                 example: Content Editor
+ *               description:
+ *                 type: string
+ *                 example: Can create and edit content
+ *     responses:
+ *       201:
+ *         description: Role created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     name:
+ *                       type: string
+ *                     displayName:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     isSystem:
+ *                       type: boolean
+ *                     isActive:
+ *                       type: boolean
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:create)
  */
 rolesRouter.post(
   '/',
@@ -100,7 +206,59 @@ rolesRouter.post(
 );
 
 /**
- * GET /api/roles/:roleId - Get role details
+ * @swagger
+ * /roles/{roleId}:
+ *   get:
+ *     summary: Get role details
+ *     description: Returns detailed information about a specific role, including its permissions.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the role
+ *     responses:
+ *       200:
+ *         description: Role details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     name:
+ *                       type: string
+ *                     displayName:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     isSystem:
+ *                       type: boolean
+ *                     isActive:
+ *                       type: boolean
+ *                     permissions:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:read)
+ *       404:
+ *         description: Role not found
  */
 rolesRouter.get(
   '/:roleId',
@@ -142,7 +300,68 @@ rolesRouter.get(
 );
 
 /**
- * PUT /api/roles/:roleId - Update role
+ * @swagger
+ * /roles/{roleId}:
+ *   put:
+ *     summary: Update role
+ *     description: Updates a role's display name and/or description. System roles cannot be modified.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the role
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               displayName:
+ *                 type: string
+ *                 example: Updated Display Name
+ *               description:
+ *                 type: string
+ *                 example: Updated description
+ *     responses:
+ *       200:
+ *         description: Role updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     name:
+ *                       type: string
+ *                     displayName:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     isSystem:
+ *                       type: boolean
+ *                     isActive:
+ *                       type: boolean
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:update) or attempting to modify a system role
+ *       404:
+ *         description: Role not found
  */
 rolesRouter.put(
   '/:roleId',
@@ -195,7 +414,42 @@ rolesRouter.put(
 );
 
 /**
- * DELETE /api/roles/:roleId - Delete role
+ * @swagger
+ * /roles/{roleId}:
+ *   delete:
+ *     summary: Delete role
+ *     description: Deletes a role from the system. System roles cannot be deleted.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the role
+ *     responses:
+ *       200:
+ *         description: Role deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Role deleted
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:delete) or attempting to delete a system role
+ *       404:
+ *         description: Role not found
  */
 rolesRouter.delete(
   '/:roleId',
@@ -235,7 +489,44 @@ rolesRouter.delete(
 );
 
 /**
- * GET /api/roles/:roleId/permissions - Get role permissions
+ * @swagger
+ * /roles/{roleId}/permissions:
+ *   get:
+ *     summary: Get role permissions
+ *     description: Returns the list of permissions assigned to a specific role.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the role
+ *     responses:
+ *       200:
+ *         description: Role permissions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["users:read", "users:update", "roles:read"]
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:read)
+ *       404:
+ *         description: Role not found
  */
 rolesRouter.get(
   '/:roleId/permissions',
@@ -264,7 +555,59 @@ rolesRouter.get(
 );
 
 /**
- * PUT /api/roles/:roleId/permissions - Update role permissions
+ * @swagger
+ * /roles/{roleId}/permissions:
+ *   put:
+ *     summary: Update role permissions
+ *     description: Replaces all permissions for a role with the provided list. The system_admin role's permissions cannot be modified.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: roleId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the role
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [permissions]
+ *             properties:
+ *               permissions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["users:read", "users:update", "roles:read"]
+ *     responses:
+ *       200:
+ *         description: Role permissions updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["users:read", "users:update", "roles:read"]
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:update) or attempting to modify system_admin permissions
+ *       404:
+ *         description: Role not found
  */
 rolesRouter.put(
   '/:roleId/permissions',
@@ -338,7 +681,48 @@ rolesRouter.put(
 // =============================================
 
 /**
- * GET /api/permissions - List all permissions
+ * @swagger
+ * /roles/permissions/all:
+ *   get:
+ *     summary: List all permissions
+ *     description: Returns a list of all available permissions in the system.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of permissions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       name:
+ *                         type: string
+ *                         example: users:read
+ *                       displayName:
+ *                         type: string
+ *                         example: Read Users
+ *                       description:
+ *                         type: string
+ *                       category:
+ *                         type: string
+ *                         example: users
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:read)
  */
 rolesRouter.get(
   '/permissions/all',
@@ -359,7 +743,42 @@ rolesRouter.get(
 // =============================================
 
 /**
- * GET /api/users/:userId/roles - Get user's roles
+ * @swagger
+ * /roles/users/{userId}/roles:
+ *   get:
+ *     summary: Get user's roles
+ *     description: Returns the list of roles assigned to a specific user.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the user
+ *     responses:
+ *       200:
+ *         description: User roles retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["user", "content_editor"]
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:read)
  */
 rolesRouter.get(
   '/users/:userId/roles',
@@ -377,7 +796,42 @@ rolesRouter.get(
 );
 
 /**
- * GET /api/users/:userId/permissions - Get user's permissions
+ * @swagger
+ * /roles/users/{userId}/permissions:
+ *   get:
+ *     summary: Get user's permissions
+ *     description: Returns the list of all permissions a user has through their assigned roles.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the user
+ *     responses:
+ *       200:
+ *         description: User permissions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["users:read", "users:update", "patients:read"]
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:read)
  */
 rolesRouter.get(
   '/users/:userId/permissions',
@@ -395,7 +849,58 @@ rolesRouter.get(
 );
 
 /**
- * PUT /api/users/:userId/roles - Assign roles to user
+ * @swagger
+ * /roles/users/{userId}/roles:
+ *   put:
+ *     summary: Assign roles to user
+ *     description: Replaces all roles for a user with the provided list. Users cannot remove their own admin role.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [roles]
+ *             properties:
+ *               roles:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 minItems: 1
+ *                 example: ["user", "content_editor"]
+ *     responses:
+ *       200:
+ *         description: User roles updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["user", "content_editor"]
+ *       400:
+ *         description: Invalid input - Provide an array of role names
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:assign) or attempting self-demotion from admin
  */
 rolesRouter.put(
   '/users/:userId/roles',
@@ -428,7 +933,49 @@ rolesRouter.put(
 );
 
 /**
- * POST /api/users/:userId/roles/:roleName - Add a role to user
+ * @swagger
+ * /roles/users/{userId}/roles/{roleName}:
+ *   post:
+ *     summary: Add a role to user
+ *     description: Adds a specific role to a user without affecting their other roles.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the user
+ *       - in: path
+ *         name: roleName
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The name of the role to add
+ *         example: content_editor
+ *     responses:
+ *       200:
+ *         description: Role added to user successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Role content_editor added to user
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:assign)
+ *       404:
+ *         description: Role not found
  */
 rolesRouter.post(
   '/users/:userId/roles/:roleName',
@@ -453,7 +1000,49 @@ rolesRouter.post(
 );
 
 /**
- * DELETE /api/users/:userId/roles/:roleName - Remove a role from user
+ * @swagger
+ * /roles/users/{userId}/roles/{roleName}:
+ *   delete:
+ *     summary: Remove a role from user
+ *     description: Removes a specific role from a user. Users cannot remove their own admin role.
+ *     tags: [Roles]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The unique identifier of the user
+ *       - in: path
+ *         name: roleName
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The name of the role to remove
+ *         example: content_editor
+ *     responses:
+ *       200:
+ *         description: Role removed from user successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Role content_editor removed from user
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       403:
+ *         description: Forbidden - Missing required permission (roles:assign) or attempting to remove own admin role
+ *       404:
+ *         description: User does not have this role
  */
 rolesRouter.delete(
   '/users/:userId/roles/:roleName',

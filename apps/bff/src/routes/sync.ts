@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import type { Router as RouterType } from 'express';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import { pgPool } from '../config/database';
@@ -10,12 +11,74 @@ import { syncPatientToErpnext, syncPatientFromErpnext } from '../services/patien
 // Patient Sync Routes
 // =============================================================================
 
-export const syncRouter = Router();
+export const syncRouter: RouterType = Router();
 
-// -----------------------------------------------------------------------------
-// POST /patients/:patientId/to-erpnext — Push patient to ERPNext
-// -----------------------------------------------------------------------------
+/**
+ * @swagger
+ * tags:
+ *   - name: Sync
+ *     description: Patient synchronization between Caladrius and ERPNext
+ */
 
+/**
+ * @swagger
+ * /api/sync/patients/{patientId}/to-erpnext:
+ *   post:
+ *     summary: Push patient to ERPNext
+ *     description: |
+ *       Manually triggers synchronization of a patient record from Caladrius to ERPNext.
+ *       Creates or updates the corresponding Patient doctype in ERPNext.
+ *     tags: [Sync]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The Caladrius patient ID to sync
+ *     responses:
+ *       200:
+ *         description: Patient synced successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     patientId:
+ *                       type: string
+ *                       format: uuid
+ *                     erpnextPatientId:
+ *                       type: string
+ *                       description: ERPNext Patient document name
+ *                     action:
+ *                       type: string
+ *                       enum: [created, updated]
+ *                     message:
+ *                       type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: Patient not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Sync failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 syncRouter.post(
   '/patients/:patientId/to-erpnext',
   authenticate,
@@ -45,10 +108,91 @@ syncRouter.post(
   }
 );
 
-// -----------------------------------------------------------------------------
-// POST /webhook/erpnext/patient — Receive patient webhook from ERPNext
-// -----------------------------------------------------------------------------
-
+/**
+ * @swagger
+ * /api/sync/webhook/erpnext/patient:
+ *   post:
+ *     summary: Receive patient webhook from ERPNext
+ *     description: |
+ *       Webhook endpoint that receives patient updates from ERPNext.
+ *       Called automatically when a Patient doctype is created or updated in ERPNext.
+ *       Requires X-Webhook-Secret header for authentication.
+ *
+ *       **Note:** Always returns 200 to prevent ERPNext retry loops, even on internal errors.
+ *     tags: [Sync]
+ *     parameters:
+ *       - in: header
+ *         name: X-Webhook-Secret
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Webhook authentication secret
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: ERPNext Patient document name
+ *               patient_name:
+ *                 type: string
+ *                 description: Full patient name
+ *               sex:
+ *                 type: string
+ *                 enum: [Male, Female, Other]
+ *               dob:
+ *                 type: string
+ *                 format: date
+ *               blood_group:
+ *                 type: string
+ *               mobile:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               custom_caladrius_id:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Linked Caladrius patient ID (if exists)
+ *     responses:
+ *       200:
+ *         description: Webhook processed (check success field for actual result)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     patientId:
+ *                       type: string
+ *                       format: uuid
+ *                     action:
+ *                       type: string
+ *                       enum: [created, updated, skipped]
+ *       401:
+ *         description: Invalid or missing webhook secret
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         description: Invalid webhook payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 syncRouter.post(
   '/webhook/erpnext/patient',
   async (req: Request, res: Response, next: NextFunction) => {
@@ -102,10 +246,67 @@ syncRouter.post(
   }
 );
 
-// -----------------------------------------------------------------------------
-// GET /status/:patientId — Get patient sync status
-// -----------------------------------------------------------------------------
-
+/**
+ * @swagger
+ * /api/sync/status/{patientId}:
+ *   get:
+ *     summary: Get patient sync status
+ *     description: Returns the synchronization status of a patient between Caladrius and ERPNext.
+ *     tags: [Sync]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The Caladrius patient ID
+ *     responses:
+ *       200:
+ *         description: Patient sync status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     patientId:
+ *                       type: string
+ *                       format: uuid
+ *                     status:
+ *                       type: string
+ *                       enum: [active, inactive, pending]
+ *                       description: Patient record status
+ *                     erpnextPatientId:
+ *                       type: string
+ *                       nullable: true
+ *                       description: Linked ERPNext Patient document name
+ *                     syncSource:
+ *                       type: string
+ *                       enum: [caladrius, erpnext]
+ *                       nullable: true
+ *                       description: System where patient was originally created
+ *                     lastSyncedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *                       description: Last successful sync timestamp
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: Patient not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 syncRouter.get(
   '/status/:patientId',
   authenticate,

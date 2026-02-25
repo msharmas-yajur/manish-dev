@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Express } from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
@@ -11,11 +11,12 @@ import { authRouter } from './routes/auth';
 import { rolesRouter } from './routes/roles';
 import { proxyRouter } from './routes/proxy';
 import { syncRouter } from './routes/sync';
+import { swaggerRouter } from './routes/swagger';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { corsMiddleware } from './middleware/cors';
 
-const app = express();
+const app: Express = express();
 
 // Security middleware
 app.use(helmet());
@@ -57,6 +58,7 @@ app.use(requestLogger);
 
 // Routes
 app.use('/health', healthRouter);
+app.use('/api/docs', swaggerRouter); // Swagger docs - must be before other /api routes
 app.use('/api/auth', authRouter);
 app.use('/api/roles', rolesRouter);
 app.use('/api', proxyRouter); // Proxy must come before generic rolesRouter to handle /api/backend/* and /api/llm/*
