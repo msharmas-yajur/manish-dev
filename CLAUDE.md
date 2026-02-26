@@ -3,9 +3,15 @@
 ---
 ## >>> RESUME HERE <<<
 
-**Current Focus:** API Documentation & Developer Experience
+**Current Focus:** Infrastructure Monitoring & DevOps
 **Task File:** `/docs/PROJECT_TASKS.md`
 **Code Review:** `/docs/CODE_REVIEW_REPORT.md`
+
+**Completed (Feb 26, 2026):**
+- Tailscale node monitor scripts (uptime alerting)
+  - Local Python version: `scripts/tailscale-monitor/` (cron + SMTP)
+  - Cloudflare Worker version: `scripts/tailscale-monitor-cf/` (serverless, Tailscale API)
+  - Configured for tailnet: `caladriusqa.tail5b7deb.ts.net`
 
 **Completed (Feb 25, 2026):**
 - Unified Swagger API documentation at `/api/docs`
@@ -85,6 +91,10 @@ Detailed documentation is split into topic-based files under `docs/context/`:
 - `/docs/CODE_REVIEW_REPORT.md` — Code review findings
 - `/docs/DATA_LAKEHOUSE_IMPLEMENTATION.md` — Data lakehouse design
 
+**Scripts:**
+- `/scripts/tailscale-monitor/` — Local Python monitor (cron + SMTP)
+- `/scripts/tailscale-monitor-cf/` — Cloudflare Worker monitor (serverless)
+
 ---
 
 ## Quick Reference
@@ -133,6 +143,7 @@ Detailed documentation is split into topic-based files under `docs/context/`:
 - [x] Frappe/ERPNext v16 (8-container stack, Healthcare module)
 - [x] Bidirectional Patient Sync (all 6 phases)
 - [x] Unified Swagger API Documentation (BFF + Backend merged)
+- [x] Tailscale Node Monitoring (local + Cloudflare Worker)
 
 ### Pending
 - [ ] FHIR Patient India IG alignment

@@ -1,0 +1,23 @@
+name = "tailscale-monitor"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# KV namespace for storing node state
+[[kv_namespaces]]
+binding = "TAILSCALE_STATE"
+id = "YOUR_KV_NAMESPACE_ID"  # Replace after creating: wrangler kv:namespace create TAILSCALE_STATE
+
+# Cron triggers - runs every 5 minutes
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Environment variables (set via wrangler secret or dashboard)
+# TAILSCALE_API_KEY - Your Tailscale API key
+# RESEND_API_KEY    - Resend.com API key
+# EMAIL_FROM        - Sender email (must be verified domain on Resend)
+# EMAIL_TO          - Recipient emails (comma-separated)
+
+[vars]
+TAILSCALE_TAILNET = "caladriusqa.tail5b7deb.ts.net"
+ALERT_ON_RECOVERY = "true"
+# IGNORED_NODES = "test-node,dev-machine"

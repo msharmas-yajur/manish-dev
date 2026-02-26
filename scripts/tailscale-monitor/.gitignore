@@ -1,0 +1,8 @@
+# Environment files (contain credentials)
+.env
+
+# State file (generated at runtime)
+node_state.json
+
+# Logs
+*.log
